@@ -5,16 +5,16 @@ import { FaWind, FaTint, FaCubes, FaChartBar } from "react-icons/fa";
 function Navbar() {
   const location = useLocation();
   const [visitedPages, setVisitedPages] = useState({
-    simulation: false,
+    conductivity: false,
     evaporation: false,
     dissolving: false,
   });
-
+ 
   useEffect(() => {
     // Mark the current page as visited
     const pageMap = {
-      "/simulation": "simulation",
-      "/evaporation": "evaporation",
+      "/conductivity": "conductivity",
+      "/magnetisim": "magnetisim",
       "/dissolving": "dissolving",
     };
 
@@ -27,8 +27,8 @@ function Navbar() {
   }, [location.pathname]);
 
   const allVisited =
-    visitedPages.simulation &&
-    visitedPages.evaporation &&
+    visitedPages.conductivity &&
+    visitedPages.magnetisim &&
     visitedPages.dissolving;
 
   return (
@@ -45,16 +45,20 @@ function Navbar() {
           <div
             className={`gap-2 ${location.pathname === "/" ? "hidden" : "flex"}`}
           >
-            <NavButton to="/simulation" icon={<FaWind />} label="Gases" />
             <NavButton
-              to="/evaporation"
+              to="/conductivity"
+              icon={<FaWind />}
+              label="Conductivity"
+            />
+            <NavButton
+              to="/magnetisim"
               icon={<FaTint />}
-              label="Evaporation"
+              label="Magnetisim"
             />
             <NavButton
               to="/dissolving"
               icon={<FaCubes />}
-              label="Dissolving Solids"
+              label="Solubility"
             />
             <NavButton
               to="/result"

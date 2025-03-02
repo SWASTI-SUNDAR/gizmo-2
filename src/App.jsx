@@ -1,13 +1,12 @@
 import "./App.css";
-import GasSimulation from "./pages/GasSimulation";
 import Navbar from "./components/PrimaryNav";
 // import EvaporationSimulation from "./pages/Evaporation";
 import { Route, Routes } from "react-router-dom";
 import Home from "./components/Home";
 import Dissolving from "./pages/Dissolving";
 import Result from "./pages/Result";
-import EvaporationSimulation from "./pages/New-Evaporation";
 import ElectricalConductivityTester from "./pages/ElectricalConductivity";
+import Magnetisim from "./pages/Magnetisim";
 function App() {
   return (
     <>
@@ -19,8 +18,7 @@ function App() {
             path="/conductivity"
             element={<ElectricalConductivityTester />}
           />
-          <Route path="/evaporation" element={<EvaporationSimulation />} />
-          <Route path="/simulation" element={<GasSimulation />} />
+          <Route path="/magnetisim" element={<Magnetisim />} />
           <Route path="/dissolving" element={<Dissolving />} />
           <Route path="/result" element={<Result />} />
         </Routes>
