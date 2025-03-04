@@ -66,13 +66,18 @@ const DissolvingSolidsSimulation = () => {
     if (!isResetting && !dissolutionCompleted) {
       interval = setInterval(() => {
         const baseRate = stirringSpeed * 0.1 + temperature * 0.01;
+        // Sand doesn't dissolve, only sugar does
         const dissolutionRate = isSugar
           ? baseRate * 0.8 // Sugar dissolves slower
-          : baseRate * 1.0; // Salt dissolves faster
+          : 0; // Sand doesn't dissolve at all
 
         setDissolved((prev) => {
-          const newValue = Math.min(1, prev + dissolutionRate * 0.01);
-          return newValue;
+          // Only increase dissolution for sugar, not for sand
+          if (isSugar) {
+            const newValue = Math.min(1, prev + dissolutionRate * 0.01);
+            return newValue;
+          }
+          return prev; // Sand stays the same
         });
       }, 100);
     }
@@ -137,19 +142,30 @@ const DissolvingSolidsSimulation = () => {
             <Canvas camera={{ position: [0, 1, 4] }}>
               <ambientLight intensity={1} />
               <pointLight position={[10, 10, 10]} />
-              <Beaker rotationAngle={rotationAngle}>
+              <Beaker
+                rotationAngle={rotationAngle}
+                stirringSpeed={stirringSpeed}
+              >
                 <ThreeSoluteCubes
                   dissolved={dissolved}
                   isResetting={isResetting}
                   isSugar={isSugar}
                   rotationAngle={rotationAngle}
                 />
-                <ParticleSystem
-                  stirringSpeed={stirringSpeed}
-                  temperature={temperature}
-                  dissolved={dissolved}
-                  isSugar={isSugar}
-                />
+                {/* Show particles system differently based on sugar or sand */}
+                {isSugar ? (
+                  <SugarParticleSystem
+                    stirringSpeed={stirringSpeed}
+                    temperature={temperature}
+                    dissolved={dissolved}
+                  />
+                ) : (
+                  <SandParticleSystem
+                    stirringSpeed={stirringSpeed}
+                    temperature={temperature}
+                    isResetting={isResetting}
+                  />
+                )}
               </Beaker>
               <OrbitControls
                 enableZoom={false}
@@ -161,7 +177,6 @@ const DissolvingSolidsSimulation = () => {
               />
             </Canvas>
           </div>
-
           <div className="absolute md:bottom-5 bottom-5 flex justify-center items-center w-full">
             <SimulationControls
               stirringSpeed={stirringSpeed}
@@ -172,9 +187,9 @@ const DissolvingSolidsSimulation = () => {
               onSugarToggle={handleSugarToggle}
               onRecordDataPoint={recordDataPoint}
               onClearData={clearData}
+              sandMode={!isSugar} // Passing a prop to indicate it's in sand mode
             />
           </div>
-
           <img
             src="male-main.png"
             className="absolute hidden md:block h-[50vh] z-0 -bottom-5 right-[10vw] "
@@ -188,7 +203,8 @@ const DissolvingSolidsSimulation = () => {
 
 export default DissolvingSolidsSimulation;
 
-const ParticleSystem = ({ stirringSpeed, temperature, dissolved, isSugar }) => {
+// Separate sugar particle system for dissolved sugar
+const SugarParticleSystem = ({ stirringSpeed, temperature, dissolved }) => {
   const particles = useRef([]);
   const group = useRef();
 
@@ -214,16 +230,133 @@ const ParticleSystem = ({ stirringSpeed, temperature, dissolved, isSugar }) => {
     <group ref={group}>
       {dissolved > 0 && (
         <instancedMesh count={Math.floor(dissolved * 100)}>
-          {/* Different particle sizes for sugar and salt */}
-          <sphereGeometry args={[isSugar ? 0.02 : 0.015]} />
+          <sphereGeometry args={[0.02]} />
           <meshStandardMaterial
-            color={isSugar ? "#f4e4bc" : "#f5f5f5"} // Yellowish for sugar, white for salt
+            color="#f4e4bc" // Yellowish for sugar
             transparent
             opacity={0.6}
           />
         </instancedMesh>
       )}
     </group>
+  );
+};
+
+// New sand particle system that simulates sand particles
+const SandParticleSystem = ({ stirringSpeed, temperature, isResetting }) => {
+  const particles = useRef([]);
+  const count = 300; // More sand particles for realistic look
+  const group = useRef();
+  const sandMaterialRef = useRef();
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+
+  // Create a state to store particles data that can be reset
+  const [sandParticles, setSandParticles] = useState(() =>
+    createInitialParticles()
+  );
+
+  // Function to generate initial particles
+  function createInitialParticles() {
+    return Array.from({ length: count }, () => ({
+      position: [
+        (Math.random() - 0.5) * 1.4,
+        -0.8 + Math.random() * 0.6, // Keep sand particles near bottom
+        (Math.random() - 0.5) * 1.4,
+      ],
+      scale: 0.3 + Math.random() * 0.7, // Varied particle sizes
+      rotation: Math.random() * Math.PI,
+      velocity: [0, -0.0009 - Math.random() * 0.003, 0], // Slowly settling sand
+    }));
+  }
+
+  // Reset particles when isResetting changes to true
+  useEffect(() => {
+    if (isResetting) {
+      // Reset particles to initial state
+      setSandParticles(createInitialParticles());
+    }
+  }, [isResetting]);
+
+  useFrame((state) => {
+    if (group.current) {
+      // Update each sand particle
+      sandParticles.forEach((particle, i) => {
+        // Apply stirring effect for particles not at the bottom
+        if (particle.position[1] > -0.9) {
+          // Apply brownian motion based on temperature
+          particle.position[0] += (Math.random() - 0.5) * temperature * 0.0002;
+          particle.position[2] += (Math.random() - 0.5) * temperature * 0.0002;
+
+          // Gravity effect - sand settles to the bottom
+          particle.position[1] += particle.velocity[1];
+
+          // Apply stirring motion if the particle is not at the bottom
+          const angle = stirringSpeed * 0.005;
+          const x = particle.position[0];
+          const z = particle.position[2];
+
+          // Calculate if the particle is being stirred strongly enough to move
+          const distFromCenter = Math.sqrt(x * x + z * z);
+          const stirringEffect =
+            stirringSpeed * 0.01 * (1 - distFromCenter / 1.5);
+
+          if (stirringEffect > 0.01 && particle.position[1] > -0.95) {
+            // Apply rotation from stirring
+            particle.position[0] = x * Math.cos(angle) - z * Math.sin(angle);
+            particle.position[2] = x * Math.sin(angle) + z * Math.cos(angle);
+
+            // Sometimes move particles up a bit when stirring fast
+            if (stirringSpeed > 2 && Math.random() > 0.97) {
+              particle.position[1] += stirringSpeed * 0.004;
+            }
+          }
+        }
+
+        // Constrain to beaker bounds
+        const dist = Math.sqrt(
+          particle.position[0] * particle.position[0] +
+            particle.position[2] * particle.position[2]
+        );
+        if (dist > 0.9) {
+          const ratio = 0.9 / dist;
+          particle.position[0] *= ratio;
+          particle.position[2] *= ratio;
+        }
+
+        // Keep particles from going below beaker bottom
+        particle.position[1] = Math.max(particle.position[1], -0.95);
+
+        // Apply to instanced mesh
+        dummy.position.set(
+          particle.position[0],
+          particle.position[1],
+          particle.position[2]
+        );
+
+        // Random scale for varied appearance
+        const scale = 0.01 + 0.005 * particle.scale;
+        dummy.scale.set(scale, scale, scale);
+        dummy.rotation.set(0, particle.rotation, 0);
+        dummy.updateMatrix();
+
+        group.current.setMatrixAt(i, dummy.matrix);
+      });
+
+      group.current.instanceMatrix.needsUpdate = true;
+    }
+  });
+
+  return (
+    <instancedMesh ref={group} args={[null, null, count]}>
+      {/* Use smaller irregular shapes for sand particles */}
+      <dodecahedronGeometry args={[1, 0]} />
+      <meshStandardMaterial
+        ref={sandMaterialRef}
+        color="#c2b280" // Sand color
+        roughness={0.8}
+        metalness={0.1}
+      />
+    </instancedMesh>
   );
 };
 
@@ -268,15 +401,7 @@ const Beaker = ({ children, rotationAngle, stirringSpeed }) => {
   return (
     <group>
       {/* Static beaker parts */}
-      <mesh>
-        <cylinderGeometry args={[1.05, 0.95, 2.1, 32]} />
-        <meshStandardMaterial
-          color="#ffffff"
-          transparent
-          opacity={0.3}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+      
       <mesh>
         <cylinderGeometry args={[1, 0.9, 2, 32]} />
         <meshPhysicalMaterial
@@ -296,22 +421,13 @@ const Beaker = ({ children, rotationAngle, stirringSpeed }) => {
           <meshPhysicalMaterial
             color="#1F83E1"
             transparent
-            opacity={1}
+            opacity={"0.6"}
             transmission={0.3}
             metalness={0.1}
             roughness={0.1}
           />
         </mesh>
       </group>
-
-      {/* Liquid surface with shader effect */}
-      <group ref={surfaceRef} position={[0, 0.5, 0]}>
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[1.9, 1.9, 32, 32]} />
-          <primitive object={shaderMaterial} />
-        </mesh>
-      </group>
-
       <group position={[0, 0.51, 0]}>{children}</group>
     </group>
   );

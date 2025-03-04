@@ -8,38 +8,40 @@ export const ThreeSoluteCubes = ({
   isResetting,
   isSugar,
   rotationAngle,
-}) => (
-  <group>
-    <SoluteCube
-      dissolved={dissolved}
-      isResetting={isResetting}
-      isSugar={isSugar}
-      position={[-0.5, 0, 0]}
-      rotationAngle={rotationAngle}
-    />
-    <SoluteCube
-      dissolved={dissolved}
-      isResetting={isResetting}
-      isSugar={isSugar}
-      position={[0.5, 0, 0]}
-      rotationAngle={rotationAngle}
-    />
-    <SoluteCube
-      dissolved={dissolved}
-      isResetting={isResetting}
-      isSugar={isSugar}
-      position={[0, 0, 0.3]}
-      rotationAngle={rotationAngle}
-    />
-  </group>
-);
+}) => {
+  // If it's not sugar (i.e., it's sand), don't render anything
+  if (!isSugar) {
+    return null;
+  }
 
-
+  // Only render sugar cubes
+  return (
+    <group>
+      <SoluteCube
+        dissolved={dissolved}
+        isResetting={isResetting}
+        position={[-0.5, 0, 0]}
+        rotationAngle={rotationAngle}
+      />
+      <SoluteCube
+        dissolved={dissolved}
+        isResetting={isResetting}
+        position={[0.5, 0, 0]}
+        rotationAngle={rotationAngle}
+      />
+      <SoluteCube
+        dissolved={dissolved}
+        isResetting={isResetting}
+        position={[0, 0, 0.3]}
+        rotationAngle={rotationAngle}
+      />
+    </group>
+  );
+};
 
 const SoluteCube = ({
   dissolved,
   isResetting,
-  isSugar,
   position = [0, 0, 0],
   rotationAngle = 0,
 }) => {
@@ -48,7 +50,6 @@ const SoluteCube = ({
 
   // Load textures
   const sugarTexture = useLoader(TextureLoader, "sugar.png");
-  const saltTexture = useLoader(TextureLoader, "salt.png");
 
   useEffect(() => {
     if (groupRef.current) {
@@ -56,51 +57,30 @@ const SoluteCube = ({
     }
   }, [rotationAngle]);
 
+  const isVisible = scale > 0.05;
+
   return (
-    <group ref={groupRef} scale={[scale, scale, scale]} position={position}>
-      {isSugar ? (
-        // More realistic sugar crystal (White)
-        <mesh>
-          <boxGeometry args={[0.4, 0.4, 0.4]} />
-          <meshStandardMaterial
-            // map={sugarTexture}
-            color="#FFFFFF" // Pure white
-            emissive="#DDDDDD"
-            opacity={1}
-            emissiveIntensity={1}
-            roughness={1}
-            metalness={1}
-          />
-        </mesh>
-      ) : (
-        // More realistic salt crystal (Brown)
-        <mesh>
-          <boxGeometry args={[0.25, 0.25, 0.25]} />
-          <meshStandardMaterial
-            map={saltTexture}
-            color="#8B4513" // Brown color for salt
-            emissive="#5A2D0C"
-            emissiveIntensity={0.15}
-            roughness={0.3}
-            metalness={0.1}
-            transparent={false}
-            opacity={1}
-          />
-        </mesh>
-      )}
-      <lineSegments>
-        <boxGeometry
-          args={[
-            isSugar ? 0.42 : 0.27,
-            isSugar ? 0.42 : 0.27,
-            isSugar ? 0.42 : 0.27,
-          ]}
+    <group
+      ref={groupRef}
+      scale={[scale, scale, scale]}
+      position={position}
+      visible={isVisible}
+    >
+      {/* Sugar crystal (White) */}
+      <mesh>
+        <boxGeometry args={[0.4, 0.4, 0.4]} />
+        <meshStandardMaterial
+          // map={sugarTexture}
+          color="#d9d9d9" // Pure white
+          emissive="#DDDDDD"
+          opacity={"0.3"}
+          emissiveIntensity={1}
+          roughness={1}
+          metalness={1}
         />
-        <lineBasicMaterial color="#000000" linewidth={2} />
-      </lineSegments>
+      </mesh>
     </group>
   );
 };
 
 export default SoluteCube;
-

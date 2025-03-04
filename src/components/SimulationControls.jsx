@@ -36,7 +36,7 @@ export const SimulationControls = ({
 
       <div className="flex md:flex-col gap-3 items-center">
         <label className="text-blue-400 text-sm font-semibold">
-          Sugar / Salt
+          Sugar / Sand
         </label>
         <button
           onClick={onSugarToggle}
@@ -50,7 +50,7 @@ export const SimulationControls = ({
             }`}
           />
         </button>
-        <span className="text-sm">{isSugar ? "Sugar" : "Salt"}</span>
+        <span className="text-sm">{isSugar ? "Sugar" : "Sand"}</span>
       </div>
 
       <div className="flex gap-5 items-center">
