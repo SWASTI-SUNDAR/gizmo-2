@@ -26,47 +26,49 @@ const MagnetGraph = ({ graphData }) => {
   }
 
   return (
-    <div className="w-full mt-6">
-      <h2 className="text-xl font-bold mb-2">Magnet Strength vs Distance</h2>
-      <div className="bg-white shadow-sm rounded-lg p-4 h-80">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={graphData}
-            margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis
-              dataKey="distance"
-              label={{
-                value: "Distance (pixels)",
-                position: "bottom",
-                offset: 0,
-              }}
-            />
-            <YAxis
-              label={{
-                value: "Attraction Force (N)",
-                angle: -90,
-                position: "insideLeft",
-              }}
-            />
-            <Tooltip
-              formatter={(value) => [`${value.toFixed(2)} N`, "Force"]}
-              labelFormatter={(value) => `Distance: ${value.toFixed(0)} px`}
-            />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="force"
-              name="Iron Attraction"
-              stroke="#8884d8"
-              activeDot={{ r: 8 }}
-              isAnimationActive={true}
-              animationDuration={500}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+    <div className="bg-white ">
+      <h2 className="text-lg font-medium mb-2 text-center">
+        Magnet Strength vs Distance
+      </h2>
+      <ResponsiveContainer width="100%" height="80%">
+        <LineChart
+          data={graphData}
+          margin={{ top: 5, right: 30, left: 20, bottom: 25 }}
+        >
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis
+            dataKey="distance"
+            label={{
+              value: "Distance (pixels)",
+              position: "insideBottom",
+              offset: -5,
+            }}
+          />
+          <YAxis
+            label={{
+              value: "Attraction Force (N)",
+              angle: -90,
+              position: "insideLeft",
+            }}
+          />
+          <Tooltip
+            formatter={(value) => [`${value.toFixed(2)} N`, "Force"]}
+            labelFormatter={(value) => `Distance: ${value.toFixed(0)} px`}
+          />
+          <Legend />
+          <Line
+            type="monotone"
+            dataKey="force"
+            name="Iron Attraction"
+            stroke="#8884d8"
+            strokeWidth={2}
+            dot={{ r: 4 }}
+            activeDot={{ r: 8 }}
+            isAnimationActive={true}
+            animationDuration={500}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 };

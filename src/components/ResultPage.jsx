@@ -25,9 +25,6 @@ const ParameterRow = ({ label, value }) => (
     <span className="text-gray-800 font-medium">{value}</span>
   </div>
 );
-// useEffect(() => {
-//   parent.SCORM_SetCompleted();
-// }, []);
 
 const ScienceSimulationUI = () => {
   const { gasesData, evaporationDataresult, dissolvingData } =
@@ -52,24 +49,24 @@ const ScienceSimulationUI = () => {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="col-span-1">
-            <ExperimentCard title="Invisible Gases" color="bg-pink-500">
-              <ParameterRow
-                label="Volume"
+            <ExperimentCard title="Conductivuty" color="bg-pink-500">
+              <ParameterRow 
+                label="Current Material :"
                 value={gasesData[0]?.volume || "N/A"}
               />
               <ParameterRow
-                label="Pressure"
+                label="Copper Voltage:"
                 value={gasesData[0]?.pressure || "N/A"}
               />
               <ParameterRow
-                label="Temperature"
+                label="Conductive:"
                 value={gasesData[0]?.temperature || "N/A"}
               />
             </ExperimentCard>
           </div>
 
           <div className="col-span-1">
-            <ExperimentCard title="Evaporation Simulation" color="bg-cyan-500">
+            <ExperimentCard title="Magnetisim" color="bg-cyan-500">
               <ParameterRow
                 label="Evaporation Rate"
                 value={evaporationDataresult[0]?.evaporationRate || "N/A"}
@@ -84,7 +81,6 @@ const ScienceSimulationUI = () => {
               />
             </ExperimentCard>
           </div>
-
           <div className="col-span-1">
             <ExperimentCard
               title="Dissolving a Solid in Liquid"

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -55,7 +55,7 @@ const ConductivitySimulation = () => {
   const selectMaterial = (material) => {
     setCurrentMaterial(material);
   };
-
+  
   // Add function to record data
   const recordData = () => {
     const newData = {
@@ -192,7 +192,7 @@ const ConductivitySimulation = () => {
   return (
     <div
       style={{
-        backgroundImage: "url('conductivity/bg-image.png')",
+        backgroundImage: "url('bg-image-first.png')",
       }}
       className="w-full bg-no-repeat bg-center bg-cover h-screen"
     >

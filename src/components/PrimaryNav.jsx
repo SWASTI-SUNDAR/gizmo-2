@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaWind, FaTint, FaCubes, FaChartBar } from "react-icons/fa";
+import { FaMagnet, FaTint, FaCubes, FaChartBar, FaBolt } from "react-icons/fa";
 
 function Navbar() {
   const location = useLocation();
@@ -38,7 +38,7 @@ function Navbar() {
           {/* Left Section */}
           <div className="flex gap-0 xl:gap-6 items-center text-white">
             <Link to="/" className="text-xl font-bold text-yellow-400">
-              Labby's Labs: Invisible Matter
+              Labby's Labs : Material Properties Explorer
             </Link>
           </div>
           {/* Navigation Buttons */}
@@ -47,19 +47,11 @@ function Navbar() {
           >
             <NavButton
               to="/conductivity"
-              icon={<FaWind />}
+              icon={<FaBolt />}
               label="Conductivity"
             />
-            <NavButton
-              to="/magnetisim"
-              icon={<FaTint />}
-              label="Magnetisim"
-            />
-            <NavButton
-              to="/dissolving"
-              icon={<FaCubes />}
-              label="Solubility"
-            />
+            <NavButton to="/" icon={<FaMagnet />} label="Magnetisim" />
+            <NavButton to="/dissolving" icon={<FaCubes />} label="Solubility" />
             <NavButton
               to="/result"
               icon={<FaChartBar />}

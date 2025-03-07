@@ -8,6 +8,7 @@ import Result from "./pages/Result";
 import ElectricalConductivityTester from "./pages/ElectricalConductivity";
 import Magnetisim from "./pages/Magnetisim";
 import Testing from "./pages/Testing";
+import MagneticMaterialsSimulator from "./pages/Something";
 function App() {
   return (
     <>
@@ -20,7 +21,7 @@ function App() {
             element={<ElectricalConductivityTester />}
           />
           <Route path="/magnetisim" element={<Magnetisim />} />
-          <Route path="/testing" element={<Testing />} />
+          <Route path="/testing" element={<MagneticMaterialsSimulator/>} />
           <Route path="/dissolving" element={<Dissolving />} />
           <Route path="/result" element={<Result />} />
         </Routes>

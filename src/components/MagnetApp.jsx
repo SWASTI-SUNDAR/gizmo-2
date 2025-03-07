@@ -24,7 +24,7 @@ const MagnetApp = () => {
 
   // State for test results data
   const [testResults, setTestResults] = useState(null);
-  
+  const [activeTab, setActiveTab] = useState("description");
   // State for graph data
   const [graphData, setGraphData] = useState([]);
 
@@ -47,16 +47,16 @@ const MagnetApp = () => {
 
     setIsTestActive(true);
     setMessage("Testing magnetic attraction...");
-    
+
     // Reset graph data for new test
     setGraphData([]);
-    
+
     // Initialize test results
     const initialResults = {};
-    materialsData.forEach(material => {
+    materialsData.forEach((material) => {
       initialResults[material.id] = {
         attracted: material.isMagnetic && magneticStrength > 0,
-        force: material.isMagnetic ? (magneticStrength / 100) * 10 : 0 // Simple force calculation
+        force: material.isMagnetic ? (magneticStrength / 100) * 10 : 0, // Simple force calculation
       };
     });
     setTestResults(initialResults);
@@ -100,7 +100,7 @@ const MagnetApp = () => {
 
     const interval = setInterval(() => {
       frameCount++;
-      
+
       setMaterialsState((prev) => {
         const newState = { ...prev };
 
@@ -119,22 +119,23 @@ const MagnetApp = () => {
             const dx = magnetPos.x - pos.x;
             const dy = magnetPos.y - pos.y;
             const distance = Math.sqrt(dx * dx + dy * dy);
-            
+
             // Calculate force based on distance and strength (inverse square law)
-            const force = moveRate * (10000 / Math.max(distance * distance, 100));
+            const force =
+              moveRate * (10000 / Math.max(distance * distance, 100));
 
             // Only collect data every 5 frames to avoid too many points
-            if (frameCount % 5 === 0 && material.id === 'iron') {
+            if (frameCount % 5 === 0 && material.id === "iron") {
               dataPoints.push({
                 distance: Math.round(distance),
                 force: force,
-                time: Date.now()
+                time: Date.now(),
               });
-              
+
               // Update the graph with latest data
               setGraphData([...dataPoints]);
             }
-            
+
             if (distance > 50) {
               // Keep some minimum distance
               // Calculate new position
@@ -233,44 +234,92 @@ const MagnetApp = () => {
       return false;
     }
   };
+  const renderTabContent = (tab) => {
+    if (!activeTab || activeTab !== tab) return null;
+
+    if ((tab === "table" || tab === "graph") && !testResults) {
+      return (
+        <div className="bg-white p-4 rounded-lg shadow-lg">
+          No recorded data to show. Record some data by clicking the "Record
+          Data" button!
+        </div>
+      );
+    }
+
+    switch (tab) {
+      case "description":
+        return (
+          <div className="p-3">
+            1. Adjust magnet strength
+            <br />
+            2. Test the attraction
+            <br />
+            3. Sort materials into correct bins
+          </div>
+        );
+      case "table":
+        return (
+          <div className="bg-white max-h-80">
+            <DataTable materials={materialsData} testResults={testResults} />
+          </div>
+        );
+      case "graph":
+        return (
+          <div className="p-4 rounded-lg h-52">
+            <MagnetGraph graphData={graphData} />
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="flex flex-col items-center w-full max-w-4xl mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">
-        Magnetic Properties Experiment
-      </h1>
-
-      <MaterialControls 
-        magneticStrength={magneticStrength}
-        onChange={handleSliderChange}
-        onTest={handleTest}
-        onReset={handleReset}
-        isTestActive={isTestActive}
-      />
-
-      <MessageDisplay 
-        message={message}
-        isError={showError}
-      />
-
-      <ExperimentArea 
-        materials={materialsData}
-        materialsState={materialsState}
-        isTestActive={isTestActive}
-        magneticStrength={magneticStrength}
-        onDrop={handleMaterialDrop}
-      />
-      
-      {/* Data visualization components */}
-      <div className="w-full flex flex-col md:flex-row gap-4 mt-8">
-        <div className="w-full md:w-1/2">
-          <DataTable 
-            materials={materialsData} 
-            testResults={testResults}
+    <div
+      style={{
+        backgroundImage: "url('conductivity/bg-image.png')",
+      }}
+      className="w-full bg-no-repeat bg-center bg-cover h-screen"
+    >
+      <div className="px-4 sm:px-8 md:px-16 lg:px-28 h-full max-w-screen-2xl mx-auto p-6">
+        <div className="relative space-y-6 h-full mt-6">
+          <div className="md:absolute hidden md:block md:top-12 md:w-96 bg-white p-2 md:p-4 rounded-lg shadow-lg space-y-2">
+            {["description", "table", "graph"].map((tab) => (
+              <div key={tab} className="border-b">
+                <button
+                  className="w-full text-left px-4 py-2 bg-blue-200 hover:bg-blue-300"
+                  onClick={() => setActiveTab(activeTab === tab ? null : tab)}
+                >
+                  {tab.toUpperCase()}
+                </button>
+                {renderTabContent(tab)}
+              </div>
+            ))}
+          </div>
+          ;
+          <MaterialControls
+            magneticStrength={magneticStrength}
+            onChange={handleSliderChange}
+            onTest={handleTest}
+            onReset={handleReset}
+            isTestActive={isTestActive}
           />
-        </div>
-        <div className="w-full md:w-1/2">
-          <MagnetGraph graphData={graphData} />
+          ;
+          <div className="absolute bottom-24  ">
+            <MessageDisplay message={message} isError={showError} />
+          </div>
+          <div className="w-full flex flex-col md:flex-row gap-4 mt-8">
+            <div className="w-full md:w-1/2"> </div>
+            <div className="w-full md:w-1/2">
+              <ExperimentArea
+                materials={materialsData}
+                materialsState={materialsState}
+                isTestActive={isTestActive}
+                magneticStrength={magneticStrength}
+                onDrop={handleMaterialDrop}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -278,3 +327,5 @@ const MagnetApp = () => {
 };
 
 export default MagnetApp;
+
+

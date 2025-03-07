@@ -1,7 +1,7 @@
-import React from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
-import MagnetApp from '../components/MagnetApp';
+import React from "react";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
+import MagnetApp from "../components/MagnetApp";
 
 const Testing = () => {
   return (
