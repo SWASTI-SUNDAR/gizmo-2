@@ -41,8 +41,6 @@ const MATERIALS = [
   },
 ];
 
-
-
 const MagnetismSimulation = () => {
   const [magnetStrength, setMagnetStrength] = useState(50);
   const [selectedMaterial, setSelectedMaterial] = useState(MATERIALS[0]);
@@ -457,7 +455,7 @@ const MagnetismSimulation = () => {
     <div
       className="w-full bg-no-repeat bg-center bg-cover h-screen relative overflow-hidden"
       style={{
-        backgroundImage: "url('magnetisim/bg-image.png')",
+        backgroundImage: "url('page-two-bg.png')",
       }}
     >
       <div className="px-4 sm:px-8 md:px-16 lg:px-28 h-full max-w-screen-2xl mx-auto p-6">

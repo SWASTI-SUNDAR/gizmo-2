@@ -50,7 +50,11 @@ function Navbar() {
               icon={<FaBolt />}
               label="Conductivity"
             />
-            <NavButton to="/" icon={<FaMagnet />} label="Magnetisim" />
+            <NavButton
+              to="/magnetisim"
+              icon={<FaMagnet />}
+              label="Magnetisim"
+            />
             <NavButton to="/dissolving" icon={<FaCubes />} label="Solubility" />
             <NavButton
               to="/result"
