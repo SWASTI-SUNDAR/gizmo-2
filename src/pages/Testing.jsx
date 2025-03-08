@@ -1,5 +1,4 @@
-import { Slider } from "@radix-ui/react-slider";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -11,38 +10,111 @@ import {
 } from "recharts";
 
 const MagneticPropertiesLab = () => {
+  // Core state
   const [magnetStrength, setMagnetStrength] = useState(50);
-  const [selectedMaterial, setSelectedMaterial] = useState("iron");
-  const [testResult, setTestResult] = useState(null);
-  const [distanceData, setDistanceData] = useState([]);
-  const [binAnimation, setBinAnimation] = useState(false);
-
+  const [ironAttached, setIronAttached] = useState(false);
   const [activeTab, setActiveTab] = useState("description");
   const [testedMaterials, setTestedMaterials] = useState([]);
+  const [distanceData, setDistanceData] = useState([]);
+  const [ironPosition, setIronPosition] = useState(0);
 
-  // Inside your MagneticPropertiesLab component
-  const [materialLocation, setMaterialLocation] = useState("workspace"); // "workspace", "magneticBin", or "nonMagneticBin"
-  const [dragEnabled, setDragEnabled] = useState(true);
+  // Animation state
+  const pulseRef = useRef(0);
+  const animationRef = useRef(null);
 
-  // Reset function to add to your component
-  const resetExperiment = () => {
-    setTestResult(null);
-    setMaterialLocation("workspace");
-    setBinAnimation(false);
-    setDragEnabled(true);
-    // Reset any other state you need
-  };
-
+  // Materials data
   const materials = [
-    { id: "iron", name: "Iron", isMagnetic: true, attractionStrength: 0.9 },
+    {
+      id: "iron",
+      name: "Iron",
+      isMagnetic: true,
+      attractionStrength: 0.9,
+      color: "#808080",
+    },
     {
       id: "aluminum",
       name: "Aluminum",
       isMagnetic: false,
-      attractionStrength: 0,
+      color: "#C0C0C0",
     },
-    { id: "glass", name: "Glass", isMagnetic: false, attractionStrength: 0 },
+    {
+      id: "glass",
+      name: "Glass",
+      isMagnetic: false,
+      color: "#ADD8E6",
+    },
   ];
+
+  // Reset experiment
+  const resetExperiment = () => {
+    setIronAttached(false);
+    setIronPosition(0);
+  };
+
+  // Calculate iron movement speed based on magnet strength
+  const calculateMovementSpeed = () => {
+    // Returns a value between 0.5 and 2 seconds
+    return 2 - (magnetStrength / 100) * 1.5;
+  };
+
+  // Monitor magnet strength changes to handle iron attraction
+  useEffect(() => {
+    if (magnetStrength > 20) {
+      // Calculate how far the iron should move based on magnet strength
+      const attractionDistance = Math.min(100, magnetStrength * 1.2);
+      setIronPosition(attractionDistance);
+
+      // Only set as fully attached when strength is high enough
+      if (magnetStrength > 70) {
+        setIronAttached(true);
+      } else {
+        setIronAttached(false);
+      }
+    } else {
+      setIronPosition(0);
+      setIronAttached(false);
+    }
+  }, [magnetStrength]);
+
+  // Animation for magnetic field
+  useEffect(() => {
+    const animatePulse = () => {
+      pulseRef.current += 0.1;
+      animationRef.current = requestAnimationFrame(animatePulse);
+    };
+
+    animationRef.current = requestAnimationFrame(animatePulse);
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, []);
+
+  // Record test data
+  const recordTest = (materialId) => {
+    const material = materials.find((m) => m.id === materialId);
+
+    // Add to tested materials if not already tested
+    if (!testedMaterials.some((m) => m.id === material.id)) {
+      setTestedMaterials([...testedMaterials, { ...material }]);
+
+      // Generate distance data for magnetic materials
+      if (material.isMagnetic) {
+        const newDataPoints = [];
+        for (let strength = 10; strength <= 100; strength += 10) {
+          const distance = (100 - strength) * (1 - material.attractionStrength);
+          newDataPoints.push({
+            strength,
+            distance,
+            material: material.name,
+          });
+        }
+        setDistanceData(newDataPoints);
+      }
+    }
+  };
 
   const renderTabContent = (tab) => {
     if (!activeTab || activeTab !== tab) return null;
@@ -71,47 +143,34 @@ const MagneticPropertiesLab = () => {
         return (
           <div className="bg-white rounded-lg p-4 shadow-lg">
             <h3 className="text-lg font-semibold mb-4">Data Table</h3>
-            <div className="overflow-x-auto">
-              <table className="min-w-full border border-gray-300">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2 border border-gray-300">Material</th>
-                    <th className="p-2 border border-gray-300">Magnetic</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {testedMaterials.length > 0 ? (
-                    testedMaterials.map((material) => (
-                      <tr key={material.id}>
-                        <td className="p-2 border border-gray-300">
-                          {material.name}
-                        </td>
-                        <td className="p-2 border border-gray-300 text-center">
-                          <span
-                            className={
-                              material.isMagnetic
-                                ? "text-green-500"
-                                : "text-red-500"
-                            }
-                          >
-                            {material.isMagnetic ? "Yes" : "No"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="2"
-                        className="p-2 border border-gray-300 text-center text-gray-500"
+            <table className="min-w-full border border-gray-300">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="p-2 border border-gray-300">Material</th>
+                  <th className="p-2 border border-gray-300">Magnetic</th>
+                </tr>
+              </thead>
+              <tbody>
+                {testedMaterials.map((material) => (
+                  <tr key={material.id}>
+                    <td className="p-2 border border-gray-300">
+                      {material.name}
+                    </td>
+                    <td className="p-2 border border-gray-300 text-center">
+                      <span
+                        className={
+                          material.isMagnetic
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }
                       >
-                        Test materials to see results
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                        {material.isMagnetic ? "Yes" : "No"}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
 
@@ -162,36 +221,6 @@ const MagneticPropertiesLab = () => {
     }
   };
 
-  const handleTest = () => {
-    const material = materials.find((m) => m.id === selectedMaterial);
-    const result = material.isMagnetic;
-    setTestResult(result);
-
-    // Add to tested materials if not already tested
-    if (!testedMaterials.some((m) => m.id === material.id)) {
-      setTestedMaterials([...testedMaterials, { ...material, tested: true }]);
-    }
-
-    // Generate distance data points for magnetic materials
-    if (result) {
-      const newDataPoints = [];
-      for (let strength = 10; strength <= 100; strength += 10) {
-        // Calculate simulated distance based on strength and material
-        const distance = (100 - strength) * (1 - material.attractionStrength);
-        newDataPoints.push({
-          strength,
-          distance,
-          material: material.name,
-        });
-      }
-      setDistanceData(newDataPoints);
-    }
-
-    // Trigger bin animation
-    setBinAnimation(true);
-    setTimeout(() => setBinAnimation(false), 1500);
-  };
-
   return (
     <div
       className="w-full bg-no-repeat bg-center bg-cover h-screen relative overflow-hidden"
@@ -199,7 +228,7 @@ const MagneticPropertiesLab = () => {
         backgroundImage: "url('page-two-bg.png')",
       }}
     >
-      <div className="px-4 sm:px-8 md:px-16 lg:px-28 h-full max-w-screen-2xl mx-auto p-6">
+      <div className="px-4 sm:px-8 md:px-16 lg:px-28 h-full  max-w-screen-2xl mx-auto p-6">
         <div className="relative space-y-6 h-full mt-6">
           <div className="md:absolute hidden md:block md:top-12 md:w-96 bg-white p-2 md:p-4 rounded-lg shadow-lg space-y-2">
             {["description", "table", "graph"].map((tab) => (
@@ -214,112 +243,150 @@ const MagneticPropertiesLab = () => {
               </div>
             ))}
           </div>
-          ;{/* Left panel - Controls */}
-          <ControlPanel
-            magnetStrength={magnetStrength}
-            setMagnetStrength={setMagnetStrength}
-            materials={materials}
-            selectedMaterial={selectedMaterial}
-            setSelectedMaterial={setSelectedMaterial}
-            handleTest={handleTest}
-            testResult={testResult}
-          />
-          {/* Main container - White box that holds the magnetism simulation */}
-          <div className="-rotate-90 w-[50%] left-[25%] absolute rounded-lg p-4 top-10  overflow-hidden">
-            {/* Main simulation area - Container for all the interactive elements */}
-            <div className="flex items-center justify-center h-64 relative">
-              {/* Material object - The item being tested for magnetism */}
-              <div
-                className="absolute"
-                style={{
-                  // Position calculation - Moves the material closer to the magnet
-                  // if it's iron and magnetic, otherwise stays in place
-                  left:
-                    selectedMaterial === "iron" && testResult
-                      ? `${Math.max(40, 60 - magnetStrength * 0.2)}%`
-                      : "60%",
-                  transition: "left 0.5s ease-out", // Smooth animation when moving
-                }}
-              >
-                <div className="flex flex-col items-center">
-                  {/* Material visual representation */}
-                  <div className="w-16 h-16 rounded flex items-center justify-center">
-                    <img
-                      src={`${selectedMaterial}.png`}
-                      className="text-xs"
-                    ></img>
-                  </div>
+          {/* Simulation Area */}
+          <div className="bg-white h-[40%] absolute max-w-md border border-gray-300 rounded-lg p-4 overflow-hidden bottom-32 left-0 right-0 mx-auto shadow-lg">
+            {/* Container for simulation with aspect ratio */}
+            <div className="relative w-full pt-[56.25%]">
+              {" "}
+              {/* 16:9 aspect ratio */}
+              <div className="absolute inset-0">
+                {/* Magnetic Field Visualization */}
+                <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="absolute rounded-full border border-blue-400 opacity-20"
+                      style={{
+                        width: `${(i + 1) * (5 + magnetStrength * 0.3)}vmin`,
+                        height: `${(i + 1) * (5 + magnetStrength * 0.3)}vmin`,
+                        left: `-${(i + 1) * (2.5 + magnetStrength * 0.15)}vmin`,
+                        top: `-${(i + 1) * (2.5 + magnetStrength * 0.15)}vmin`,
+                        animation: "pulse 2s infinite",
+                      }}
+                    />
+                  ))}
                 </div>
-              </div>
-              {/* Magnet object - The source of magnetic attraction */}
-              <div className="absolute left-10">
-                {/* Magnet visual representation (red and blue ends) */}
-                <div className="h-32 w-32 rounded flex items-center justify-center overflow-hidden">
-                  <div className="w-full h-full rotate-90 flex">
-                    <img src="magnet.png" className=""></img>
-                  </div>
-                </div>
-                {/* Magnetic field visualization - Concentric circles showing field strength */}
-                <div className="absolute top-0 left-full">
-                  {magnetStrength > 20 && (
-                    <div className="w-20 h-12 flex items-center justify-center">
-                      {/* Generate circles based on magnet strength */}
-                      {[...Array(Math.floor(magnetStrength / 20))].map(
-                        (_, i) => (
-                          <div
-                            key={i}
-                            className="absolute w-20 h-20 rounded-full border border-blue-400 opacity-20"
-                            style={{
-                              width: `${(i + 1) * 20}px`, // Increasing size for each circle
-                              height: `${(i + 1) * 20}px`,
-                            }}
-                          ></div>
-                        )
-                      )}
+                {/* Magnet */}
+                <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2">
+                  <div className="w-[8vmin] h-[20vmin] bg-red-500 rounded-l-lg flex flex-col justify-between">
+                    <div className="w-full h-1/2 bg-red-600 rounded-tl-lg flex items-center justify-center text-white font-bold">
+                      N
                     </div>
-                  )}
+                    <div className="w-full h-1/2 bg-blue-600 rounded-bl-lg flex items-center justify-center text-white font-bold">
+                      S
+                    </div>
+                  </div>
+                </div>
+                {/* Materials area - positioned on the right side */}
+                <div className="absolute right-[10%] top-0 h-full flex flex-col justify-evenly items-start">
+                  <div className="relative flex items-center mb-6">
+                    <div
+                      className="cursor-pointer flex items-center justify-center"
+                      onClick={() => recordTest("aluminum")}
+                      style={{
+                        backgroundColor: materials[1].color,
+                        width: "8vmin",
+                        height: "8vmin",
+                        borderRadius: "50%",
+                        position: "relative",
+                        border: "2px solid #555",
+                      }}
+                    >
+                      <span className="text-gray-700 font-bold text-sm sm:text-base">
+                        Al
+                      </span>
+                      <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
+                        Aluminum
+                      </div>
+                    </div>
+                  </div>
+                  {/* Iron - in the middle */}
+                  <div className="relative flex items-center mb-6">
+                    <div
+                      className="cursor-pointer flex items-center justify-center"
+                      onClick={() => recordTest("iron")}
+                      style={{
+                        right: `${ironPosition * 0.3}vmin`,
+                        backgroundColor: materials[0].color,
+                        width: "8vmin",
+                        height: "8vmin",
+                        borderRadius: "50%",
+                        position: "relative",
+                        transition: `right ${calculateMovementSpeed()}s ${
+                          ironAttached ? "ease-in" : "ease-out"
+                        }`,
+                        border: "2px solid #555",
+                        transform: ironAttached ? "scale(1.05)" : "scale(1)",
+                      }}
+                    >
+                      <span className="text-white font-bold text-sm sm:text-base">
+                        Fe
+                      </span>
+                      <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
+                        Iron
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Aluminum - at the top */}
+
+                  {/* Glass - at the bottom */}
+                  <div className="relative flex items-center">
+                    <div
+                      className="cursor-pointer flex items-center justify-center"
+                      onClick={() => recordTest("glass")}
+                      style={{
+                        backgroundColor: materials[2].color,
+                        width: "8vmin",
+                        height: "8vmin",
+                        borderRadius: "50%",
+                        position: "relative",
+                        border: "2px solid #555",
+                        opacity: 0.8,
+                      }}
+                    >
+                      <span className="text-gray-700 font-bold text-sm sm:text-base">
+                        Si
+                      </span>
+                      <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
+                        Glass
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
-            {/* Result bins - Visual indicators for sorting materials */}
           </div>
-          {/* Errors panel */}
-          <div className=" absolute bottom-24 rounded-lg p-4 shadow-lg">
-            {testResult !== null && (
-              <div className="mt-4 p-3 rounded bg-blue-50 border border-blue-200">
-                <p className="font-medium text-black">
-                  Test Result: {selectedMaterial} is
-                  <span
-                    className={`font-bold ${
-                      testResult ? "text-green-600" : "text-red-600"
-                    }`}
-                  >
-                    {testResult ? " magnetic" : " not magnetic"}
-                  </span>
-                </p>
-              </div>
-            )}
-          </div>
+          {/* Control Panel */}
+          <ControlPanel
+            magnetStrength={magnetStrength}
+            setMagnetStrength={setMagnetStrength}
+            resetExperiment={resetExperiment}
+          />
         </div>
       </div>
+      <div className="relative  bg-white rounded-lg shadow-lg p-6 flex flex-col">
+        <h1 className="text-2xl font-bold text-center mb-4">
+          Magnetic Properties Lab
+        </h1>
+
+        {/* Control panel */}
+      </div>
+
+      {/* Add keyframe animation for magnetic field pulse */}
       <style jsx>{`
-        @keyframes magneticWave {
+        @keyframes pulse {
           0% {
-            transform: scale(0.2);
+            transform: scale(0.9);
             opacity: 0.7;
           }
-          100% {
+          50% {
             transform: scale(1);
-            opacity: 0;
-          }
-        }
-
-        @keyframes particleMove {
-          0% {
-            transform: translateX(0);
+            opacity: 0.3;
           }
           100% {
-            transform: translateX(-${magnetStrength / 2}px);
+            transform: scale(0.9);
+            opacity: 0.7;
           }
         }
       `}</style>
@@ -332,44 +399,14 @@ export default MagneticPropertiesLab;
 const ControlPanel = ({
   magnetStrength,
   setMagnetStrength,
-  materials,
-  selectedMaterial,
-  setSelectedMaterial,
-  handleTest,
-  testResult,
+  resetExperiment,
+  recordTest,
 }) => {
   return (
-    <div className="space-y-6 absolute md:bottom-5 bottom-5 flex justify-center items-center w-full">
-      <div className="bg-gray-900 w-full z-50 text-white p-3 rounded-lg shadow-lg grid grid-cols-3 justify-center items-center md:gap-10 gap-5">
-        {/* Material selector */}
-        <div className="flex gap-6 items-center justify-center w-full">
-          {materials.map((material) => (
-            <div
-              key={material.id}
-              className="flex flex-col gap-2 items-center justify-center"
-            >
-              <span className="text-blue-400 text-sm font-semibold capitalize">
-                {material.name}
-              </span>
-              <button
-                onClick={() => setSelectedMaterial(material.id)}
-                className={`w-6 h-6 rounded-full border-2 ${
-                  selectedMaterial === material.id
-                    ? "border-white"
-                    : "border-gray-400"
-                }`}
-                style={{ backgroundColor: material.color }}
-              >
-                {selectedMaterial === material.id && (
-                  <div className="w-2 h-2 bg-white rounded-full mx-auto"></div>
-                )}
-              </button>
-            </div>
-          ))}
-        </div>
-
+    <div className="space-y-6 absolute  md:bottom-5 bottom-5 flex justify-center items-center w-full">
+      <div className="bg-gray-900 px-16 z-50 text-white p-3 rounded-lg shadow-lg flex justify-center items-center md:gap-16 gap-5">
         {/* Magnet Strength Slider */}
-        <div className="flex flex-col w-full gap-2 justify-center items-center">
+        <div className="flex flex-col  gap-2 justify-center items-center">
           <span className="text-blue-400 text-sm font-semibold">
             Magnet Strength
           </span>
@@ -386,18 +423,23 @@ const ControlPanel = ({
           <span className="text-sm ml-2 w-12">{magnetStrength}%</span>
         </div>
 
-        {/* Test button */}
-        <div className="flex gap-5 items-center justify-center w-full">
+        {/* Reset button */}
+
+        <div className="flex gap-10 items-center justify-center  ">
           <button
-            onClick={handleTest}
+            onClick={recordTest}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
           >
-            Test Material
+            Record Test
+          </button>
+          <button
+            onClick={resetExperiment}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            Reset
           </button>
         </div>
       </div>
-
-      {/* Test Result */}
     </div>
   );
 };

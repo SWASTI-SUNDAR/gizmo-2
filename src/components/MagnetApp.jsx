@@ -234,6 +234,7 @@ const MagnetApp = () => {
       return false;
     }
   };
+
   const renderTabContent = (tab) => {
     if (!activeTab || activeTab !== tab) return null;
 
@@ -273,7 +274,6 @@ const MagnetApp = () => {
         return null;
     }
   };
-
   return (
     <div
       style={{
@@ -296,7 +296,7 @@ const MagnetApp = () => {
               </div>
             ))}
           </div>
-          ;
+
           <MaterialControls
             magneticStrength={magneticStrength}
             onChange={handleSliderChange}
@@ -304,10 +304,10 @@ const MagnetApp = () => {
             onReset={handleReset}
             isTestActive={isTestActive}
           />
-          ;
           <div className="absolute bottom-24  ">
             <MessageDisplay message={message} isError={showError} />
           </div>
+
           <div className="w-full flex flex-col md:flex-row gap-4 mt-8">
             <div className="w-full md:w-1/2"> </div>
             <div className="w-full md:w-1/2">
@@ -327,5 +327,3 @@ const MagnetApp = () => {
 };
 
 export default MagnetApp;
-
-
