@@ -345,12 +345,13 @@ const MagneticPropertiesLab = () => {
                 {/* Materials area - positioned on the right side */}
                 <div className="absolute text-white font-bold right-[25%] top-0 h-full flex flex-col justify-evenly items-start">
                   {/* Aluminum - at the top */}
-                  {!materialPositions.aluminum.inBin && (
+                  
                     <div
                       style={{
                         backgroundImage: "url('aluminum.png')",
                         backgroundSize: "contain",
                         backgroundRepeat: "no-repeat",
+                        opacity: `${materialPositions.aluminum.inBin ? 0 : 1}`,
                       }}
                       draggable={sliderUsed}
                       onDragStart={(e) =>
@@ -379,7 +380,6 @@ const MagneticPropertiesLab = () => {
                         </div>
                       </div>
                     </div>
-                  )}
 
                   {/* Iron - in the middle (not draggable) */}
                   <div className="relative rotate-90 flex items-center mb-2">
@@ -408,12 +408,13 @@ const MagneticPropertiesLab = () => {
                   </div>
 
                   {/* Glass - at the bottom */}
-                  {!materialPositions.glass.inBin && (
+                  
                     <div
                       style={{
                         backgroundImage: "url('glass.png')",
                         backgroundSize: "contain",
                         backgroundRepeat: "no-repeat",
+                        opacity: `${materialPositions.glass.inBin ? 0 : 1}`,
                       }}
                       draggable={sliderUsed} // Only draggable if slider has been used
                       onDragStart={(e) =>
@@ -443,7 +444,6 @@ const MagneticPropertiesLab = () => {
                         </div>
                       </div>
                     </div>
-                  )}
                 </div>
                 {/* Bin for non-magnetic materials */}
               </div>
