@@ -363,72 +363,231 @@ const SandParticleSystem = ({ stirringSpeed, temperature, isResetting }) => {
 const Beaker = ({ children, rotationAngle, stirringSpeed }) => {
   const liquidRef = useRef();
   const surfaceRef = useRef();
-  const shaderRef = useRef();
+  const bubblesRef = useRef();
 
-  const shaderMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: liquidVertexShader,
-        fragmentShader: liquidFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uColor: { value: new THREE.Color("#4499ff") },
-          uRotationSpeed: { value: 0 },
-        },
-        transparent: true,
-        side: THREE.DoubleSide,
-      }),
-    []
-  );
+  // Create advanced material for a more visually appealing liquid color
+  // Using a vibrant teal/turquoise instead of standard blue
+  const liquidMaterial = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color("#20CDD9"),  // Vibrant turquoise color
+      transparent: true,
+      opacity: 0.85,                      // Increased opacity for better visibility
+      transmission: 0.3,
+      metalness: 0.05,
+      roughness: 0.2,
+      clearcoat: 0.4,                     // Added subtle clearcoat for surface shine
+      emissive: new THREE.Color("#106e77"),  // Subtle emissive glow
+      emissiveIntensity: 0.2,
+      reflectivity: 0.25,
+    });
+  }, []);
 
-  // Update shader uniforms in animation frame
+  // Create surface material with more enhanced properties
+  const surfaceMaterial = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color("#40E0E0"),  // Slightly lighter than the body
+      transparent: true,
+      opacity: 0.9,
+      metalness: 0.1,
+      roughness: 0.15,
+      clearcoat: 0.6,
+      clearcoatRoughness: 0.2,
+      envMapIntensity: 1.5,
+    });
+  }, []);
+
+  // Update animations in animation frame
   useFrame((state) => {
-    if (shaderMaterial) {
-      shaderMaterial.uniforms.uTime.value = state.clock.getElapsedTime();
-      shaderMaterial.uniforms.uRotationSpeed.value = stirringSpeed * 0.01;
+    const time = state.clock.getElapsedTime();
+    
+    // Rotate liquid based on stirring speed
+    if (liquidRef.current) {
+      liquidRef.current.rotation.y = rotationAngle;
+      
+      // Apply enhanced wobble to liquid when stirring
+      if (stirringSpeed > 0) {
+        const wobble = Math.sin(time * 3) * 0.01 * (stirringSpeed / 8);
+        liquidRef.current.position.x = wobble;
+        liquidRef.current.position.z = wobble * 0.7;
+        
+        // Add subtle vertical oscillation for more dynamic movement
+        liquidRef.current.position.y = Math.sin(time * 1.5) * 0.005 * stirringSpeed;
+      }
+    }
+    
+    // Update surface
+    if (surfaceRef.current) {
+      surfaceRef.current.rotation.y = rotationAngle;
+      
+      // Add wave effect to surface
+      if (stirringSpeed > 1) {
+        const surfaceWobble = Math.min(0.03, stirringSpeed * 0.005);
+        surfaceRef.current.position.y = 0.51 + Math.sin(time * 2) * surfaceWobble;
+      }
+    }
+    
+    // Animate bubbles
+    if (bubblesRef.current && stirringSpeed > 0) {
+      bubblesRef.current.children.forEach((bubble, i) => {
+        // Reset bubble position when it reaches top
+        if (bubble.position.y > 0.6) {
+          bubble.position.y = -0.7;
+          bubble.position.x = (Math.random() - 0.5) * 1.6;
+          bubble.position.z = (Math.random() - 0.5) * 1.6;
+          bubble.scale.set(
+            Math.random() * 0.04 + 0.02,
+            Math.random() * 0.04 + 0.02,
+            Math.random() * 0.04 + 0.02
+          );
+        }
+        
+        // Move bubbles upward with enhanced randomness
+        bubble.position.y += 0.01 * (Math.random() * 0.6 + 0.7) * (stirringSpeed / 4 + 0.2);
+        
+        // Add enhanced horizontal movement
+        bubble.position.x += Math.sin(time * (i + 1) * 0.8) * 0.0015 * stirringSpeed;
+        bubble.position.z += Math.cos(time * (i + 1) * 0.9) * 0.0015 * stirringSpeed;
+        
+        // Subtle scale pulsing
+        const pulseFactor = 1 + Math.sin(time * 3 + i) * 0.05;
+        bubble.scale.x = bubble.scale.y = bubble.scale.z *= pulseFactor;
+      });
     }
   });
 
-  useEffect(() => {
-    if (liquidRef.current) {
-      liquidRef.current.rotation.y = rotationAngle;
+  // Create bubbles with improved appearance
+  const createBubbles = () => {
+    const bubbles = [];
+    const bubbleMaterial = new THREE.MeshPhysicalMaterial({
+      color: "#ffffff",
+      transmission: 0.92,
+      opacity: 0.7,
+      transparent: true,
+      roughness: 0.05,
+      ior: 1.5,
+      clearcoat: 1,
+      clearcoatRoughness: 0.1,
+      side: THREE.FrontSide,
+    });
+
+    // Create more bubbles when stirring is active
+    const bubbleCount = 25;
+    
+    for (let i = 0; i < bubbleCount; i++) {
+      const bubbleSize = Math.random() * 0.04 + 0.02;
+      const x = (Math.random() - 0.5) * 1.6;
+      const y = (Math.random() - 0.5) * 1.4 - 0.1; // Start below surface
+      const z = (Math.random() - 0.5) * 1.6;
+      
+      bubbles.push(
+        <mesh
+          key={i}
+          position={[x, y, z]}
+          scale={[bubbleSize, bubbleSize, bubbleSize]}
+        >
+          <sphereGeometry args={[1, 16, 16]} /> {/* Higher resolution spheres */}
+          <primitive object={bubbleMaterial} />
+        </mesh>
+      );
     }
-    if (surfaceRef.current) {
-      surfaceRef.current.rotation.y = rotationAngle;
-    }
-  }, [rotationAngle]);
+    
+    return bubbles;
+  };
 
   return (
     <group>
-      {/* Static beaker parts */}
-      
+      {/* Enhanced glass beaker with subtle coloration */}
       <mesh>
-        <cylinderGeometry args={[1, 0.9, 2, 32]} />
+        <cylinderGeometry args={[1, 0.9, 2, 32, 8]} /> {/* Added segments for better lighting */}
         <meshPhysicalMaterial
-          color="#ffffff"
-          transmission={0.98}
-          thickness={0.02}
-          roughness={0.05}
+          color="#e8f1ff"  // Very slight blue tint instead of pure white
+          transmission={0.96}
+          thickness={0.04}
+          roughness={0.03}
+          ior={1.52}       // Higher index of refraction for more realistic glass
+          clearcoat={1}
+          // clearcoatRoughness: 1,
+          envMapIntensity={2}
           transparent
-          opacity={0.5}
+          opacity={0.7}
         />
       </mesh>
-
-      {/* Rotating liquid body */}
+      
+      {/* Enhanced beaker rim with better shape */}
+      <mesh position={[0, 0.98, 0]}>
+        <torusGeometry args={[1.02, 0.04, 16, 32]} /> {/* Changed to torus for more realistic rim */}
+        <meshPhysicalMaterial
+          color="#d8e8ff"  // Subtle blue tint
+          transmission={0.92}
+          thickness={0.06}
+          roughness={0.04}
+          clearcoat={0.5}
+          transparent
+          opacity={0.8}
+        />
+      </mesh>
+      
+      {/* Bottom reinforcement for beaker */}
+      <mesh position={[0, -1, 0]}>
+        <cylinderGeometry args={[0.9, 0.9, 0.1, 32]} />
+        <meshPhysicalMaterial
+          color="#e0ebff"
+          transmission={0.9}
+          thickness={0.1}
+          roughness={0.05}
+          transparent
+          opacity={0.75}
+        />
+      </mesh>
+      
+      {/* Enhanced measurement lines with subtle glow */}
+      <group>
+        {[...Array(5)].map((_, i) => (
+          <mesh key={i} position={[0, -0.7 + i * 0.3, 0]} rotation={[0, 0, 0]}>
+            <ringGeometry args={[0.901, 0.905, 32, 1, 0, Math.PI * 0.5]} />
+            <meshStandardMaterial 
+              color="#ffffff" 
+              opacity={0.8} 
+              transparent 
+              emissive="#ffffff"
+              emissiveIntensity={0.2}
+            />
+          </mesh>
+        ))}
+        
+        {/* Add small volume indicators */}
+        {[...Array(5)].map((_, i) => (
+          <mesh key={i} position={[0.91, -0.7 + i * 0.3, 0]} rotation={[0, 0, 0]}>
+            <boxGeometry args={[0.02, 0.01, 0.05]} />
+            <meshStandardMaterial color="#ffffff" opacity={0.9} transparent />
+          </mesh>
+        ))}
+      </group>
+      
+      {/* Enhanced liquid body */}
       <group ref={liquidRef}>
+        {/* Main liquid body */}
         <mesh position={[0, -0.25, 0]}>
           <cylinderGeometry args={[0.95, 0.85, 1.5, 32, 32]} />
-          <meshPhysicalMaterial
-            color="#1F83E1"
-            transparent
-            opacity={"0.6"}
-            transmission={0.3}
-            metalness={0.1}
-            roughness={0.1}
-          />
+          <primitive object={liquidMaterial} />
+        </mesh>
+        
+        {/* Liquid surface with better material */}
+        <mesh ref={surfaceRef} position={[0, 0.51, 0]} rotation={[Math.PI/2, 0, 0]}>
+          <circleGeometry args={[0.95, 32]} />
+          <primitive object={surfaceMaterial} />
         </mesh>
       </group>
-      <group position={[0, 0.51, 0]}>{children}</group>
+      
+      {/* Enhanced bubbles */}
+      <group ref={bubblesRef}>
+        {createBubbles()}
+      </group>
+      
+      {/* Container for children components */}
+      <group position={[0, 0.51, 0]}>
+        {children}
+      </group>
     </group>
   );
 };
