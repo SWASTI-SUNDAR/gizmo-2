@@ -27,10 +27,10 @@ const ParameterRow = ({ label, value }) => (
 );
 
 const ScienceSimulationUI = () => {
-  const { gasesData, evaporationDataresult, dissolvingData } =
+  const { conductivityData, MagnetisimData, dissolvingData } =
     useContext(ExperimentContext);
-  alert("Result Page");
-  console.log(gasesData, evaporationDataresult, dissolvingData);
+  // alert("Result Page");
+  console.log(conductivityData, MagnetisimData, dissolvingData);
   return (
     <div
       style={{ backgroundImage: "url(result-page-bg.png)" }}
@@ -50,17 +50,17 @@ const ScienceSimulationUI = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="col-span-1">
             <ExperimentCard title="Conductivuty" color="bg-pink-500">
-              <ParameterRow 
-                label="Current Material :"
-                value={gasesData[0]?.volume || "N/A"}
+              <ParameterRow
+                label="Conductive :"
+                value={conductivityData[0]?.conductive || "N/A"}
               />
               <ParameterRow
-                label="Copper Voltage:"
-                value={gasesData[0]?.pressure || "N/A"}
+                label="material:"
+                value={conductivityData[0]?.material || "N/A"}
               />
               <ParameterRow
-                label="Conductive:"
-                value={gasesData[0]?.temperature || "N/A"}
+                label="voltage:"
+                value={conductivityData[0]?.voltage || "N/A"}
               />
             </ExperimentCard>
           </div>
@@ -68,16 +68,16 @@ const ScienceSimulationUI = () => {
           <div className="col-span-1">
             <ExperimentCard title="Magnetisim" color="bg-cyan-500">
               <ParameterRow
-                label="Evaporation Rate"
-                value={evaporationDataresult[0]?.evaporationRate || "N/A"}
+                label="Material"
+                value={MagnetisimData[0]?.material || "N/A"}
               />
               <ParameterRow
-                label="Temperature"
-                value={evaporationDataresult[0]?.temperature || "N/A" + " °C"}
+                label="Magnetic"
+                value={MagnetisimData[0]?.isMagnetic || "N/A" + " °C"}
               />
               <ParameterRow
-                label="Time"
-                value={evaporationDataresult[0]?.timestamp || "N/A" + " °C"}
+                label="strength"
+                value={MagnetisimData[0]?.strength || "N/A" + " °C"}
               />
             </ExperimentCard>
           </div>

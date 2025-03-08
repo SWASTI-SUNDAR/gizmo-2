@@ -5,17 +5,17 @@ export const ExperimentContext = createContext();
 
 // Provider Component
 export const ExperimentProvider = ({ children }) => {
-  const [conductivity, setConductivity] = useState([]);
-  const [evaporationDataresult, setEvaporationDataResult] = useState([]);
+  const [conductivityData, setConductivityData] = useState([]);
+  const [MagnetisimData, setMagnetisimData] = useState([]);
   const [dissolvingData, setDissolvingData] = useState([]);
 
   return (
     <ExperimentContext.Provider
       value={{
-        conductivity,
-        setConductivity,
-        evaporationDataresult,
-        setEvaporationDataResult,
+        conductivityData,
+        setConductivityData,
+        MagnetisimData,
+        setMagnetisimData,
         dissolvingData,
         setDissolvingData,
       }}

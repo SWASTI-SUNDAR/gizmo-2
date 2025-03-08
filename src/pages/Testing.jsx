@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts";
+import { ExperimentContext } from "../context/Context";
 
 // Materials data
 const materials = [
@@ -47,7 +48,6 @@ const MagneticPropertiesLab = () => {
     aluminum: { inBin: false, originalPos: { top: "25%", right: "10%" } },
     glass: { inBin: false, originalPos: { top: "75%", right: "10%" } },
   });
-
   // Animation state
   const pulseRef = useRef(0);
   const animationRef = useRef(null);
@@ -119,9 +119,21 @@ const MagneticPropertiesLab = () => {
   }, []);
 
   // Record test data
+
+  const { MagnetisimData, setMagnetisimData } = useContext(ExperimentContext);
+
   const recordTest = (materialId) => {
     const material = materials.find((m) => m.id === materialId);
-
+     
+    const newData = {
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      material: material.name,
+      isMagnetic: material.isMagnetic ? "Yes" : "No",
+      strength: magnetStrength,
+      maxAttraction: material.isMagnetic ? Math.round(maxIronPosition) : 0,
+    };
+    setMagnetisimData([...MagnetisimData, newData]);
     // Add to tested materials if not already tested
     if (!testedMaterials.some((m) => m.id === material.id)) {
       setTestedMaterials([...testedMaterials, { ...material }]);
@@ -140,6 +152,7 @@ const MagneticPropertiesLab = () => {
         setDistanceData(newDataPoints);
       }
     }
+    // setMagnetisimData([...MagnetisimData,newDataPoints]);
   };
 
   // Drag handlers
@@ -196,7 +209,15 @@ const MagneticPropertiesLab = () => {
   const recordAllMaterials = () => {
     // Record data for all materials
     materials.forEach((material) => recordTest(material.id));
-
+    const newData = {
+      id: Date.now() + Math.random(), // Ensure unique ID
+      timestamp: new Date().toISOString(),
+      material: materials.name,
+      isMagnetic: materials.isMagnetic ? "Yes" : "No",
+      strength: magnetStrength,
+      maxAttraction: material.isMagnetic ? Math.round(maxIronPosition) : 0,
+    };
+    setMagnetisimData([...MagnetisimData, newData]);
     // Hard-code the iron distance data for the graph
     const ironData = [];
     for (let strength = 10; strength <= 100; strength += 10) {
@@ -210,12 +231,12 @@ const MagneticPropertiesLab = () => {
     setDistanceData(ironData);
 
     // Switch to show the table tab first
-    setActiveTab("table");
+    // setActiveTab("table");
 
-    // After 2 seconds, switch to show the graph
-    setTimeout(() => {
-      setActiveTab("graph");
-    }, 2000);
+    // // After 2 seconds, switch to show the graph
+    // setTimeout(() => {
+    //   setActiveTab("graph");
+    // }, 2000);
   };
   const renderTabContent = (tab) => {
     if (!activeTab || activeTab !== tab) return null;
@@ -321,6 +342,7 @@ const MagneticPropertiesLab = () => {
         return null;
     }
   };
+  
   const handleSliderChange = (value) => {
     setMagnetStrength(value);
     if (!sliderUsed) {

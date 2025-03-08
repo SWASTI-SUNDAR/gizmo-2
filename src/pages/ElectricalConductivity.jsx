@@ -10,6 +10,7 @@ import {
   BarChart,
   Bar,
 } from "recharts";
+import { ExperimentContext } from "../context/Context";
 
 const ConductivitySimulation = () => {
   // State variables
@@ -45,6 +46,8 @@ const ConductivitySimulation = () => {
     setCurrentMaterial(material);
   };
   
+  const { conductivityData, setConductivityData } =
+    useContext(ExperimentContext);
   // Add function to record data
   const recordData = () => {
     const newData = {
@@ -56,6 +59,7 @@ const ConductivitySimulation = () => {
       conductive: materials[currentMaterial].conductive ? "Yes" : "No",
     };
     setRecordedData([...recordedData, newData]);
+    setConductivityData([...conductivityData, newData]);
   };
 
   const renderTabContent = (tab) => {

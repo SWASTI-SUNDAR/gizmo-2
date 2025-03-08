@@ -3,12 +3,12 @@ import ResultPage from "../components/ResultPage";
 import { ExperimentContext } from "../context/Context";
 
 function Result() {
-  const { gasesData, evaporationDataResult, dissolvingData } =
+  const { conductivityData, MagnetisimData, dissolvingData } =
     useContext(ExperimentContext);
 
   const recordedData = {
-    gases: gasesData,
-    evaporation: evaporationDataResult,
+    conductivity: conductivityData,
+    Magnetisim: MagnetisimData,
     dissolving: dissolvingData,
   };
 
