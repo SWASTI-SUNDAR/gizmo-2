@@ -351,27 +351,13 @@ const MagneticPropertiesLab = () => {
             ))}
           </div>
           {/* Simulation Area */}
-          <div className=" -rotate-90 h-[50%] absolute max-w-xl rounded-lg p-4 overflow-hidden bottom-32 left-0 right-0 mx-auto ">
+          <div className=" -rotate-90 h-[50%] absolute max-w-xl rounded-lg p-4 bottom-32 left-0 right-0 mx-auto ">
             {/* Container for simulation with aspect ratio */}
             <div className="relative w-full pt-[56.25%]">
               {" "}
               <div className="">
                 {/* Magnetic Field Visualization */}
-                <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2">
-                  {[...Array(5)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute rounded-full border border-blue-400 opacity-20"
-                      style={{
-                        width: `${(i + 1) * (5 + magnetStrength * 0.3)}vmin`,
-                        height: `${(i + 1) * (5 + magnetStrength * 0.3)}vmin`,
-                        left: `-${(i + 1) * (2.5 + magnetStrength * 0.15)}vmin`,
-                        top: `-${(i + 1) * (2.5 + magnetStrength * 0.15)}vmin`,
-                        animation: "pulse 2s infinite",
-                      }}
-                    />
-                  ))}
-                </div>
+                <MagneticField strength={magnetStrength} />
                 {/* Magnet */}
                 <div className="absolute rotate-90  left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2">
                   <img
@@ -612,5 +598,111 @@ const ControlPanel = ({
         </div>
       </div>
     </div>
+  );
+};
+
+const MagneticField = ({ strength }) => {
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const pulseRef = useRef(0);
+
+  // Initialize and animate the magnetic field
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // This controls the size of the canvas itself
+    const resizeCanvas = () => {
+      // ADJUST THIS LINE - decrease the multiplier from 3 to a smaller value
+      const size = Math.max(200, strength * 1); // Changed from 3 to 2
+      canvas.width = size ;
+      canvas.height = size ;
+    };
+
+    resizeCanvas();
+
+    // Draw magnetic field
+    const drawMagneticField = () => {
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const fieldStrength = Math.max(10, strength);
+
+      // Draw multiple field rings
+      for (let i = 0; i < 5; i++) {
+        // Calculate radius with pulsing effect
+        let radius =
+          20 + // Base size (keep this)
+          fieldStrength * (i * 0.3 + 0.3) + // Change 0.5 to 0.3 to make rings smaller
+          Math.sin(pulseRef.current - i * 0.5) * 5; // Animation effect
+
+        // Calculate opacity based on strength and ring number
+        let alpha = Math.max(0.05, (fieldStrength / 100) * (0.5 - i * 0.1));
+
+        // Set stroke style
+        ctx.strokeStyle = `rgba(30, 64, 255, ${alpha})`;
+        ctx.lineWidth = 2;
+
+        // Draw ring
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inner glow for strongest ring
+        if (i === 0 && strength > 50) {
+          ctx.fillStyle = `rgba(30, 90, 255, ${alpha * 0.2})`;
+          ctx.fill();
+        }
+      }
+
+      // Add particles if strong enough
+      if (strength > 30) {
+        const particleCount = Math.floor(strength / 10);
+
+        for (let i = 0; i < particleCount; i++) {
+          const angle =
+            pulseRef.current * 0.5 + (i / particleCount) * Math.PI * 2;
+          const distance =
+            30 + strength * 0.3 + Math.sin(pulseRef.current + i) * 10;
+          const x = centerX + Math.cos(angle) * distance;
+          const y = centerY + Math.sin(angle) * distance;
+
+          // Draw particle
+          ctx.fillStyle = `rgba(100, 150, 255, ${0.3 + Math.random() * 0.3})`;
+          ctx.beginPath();
+          ctx.arc(x, y, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    };
+
+    // Animation loop
+    const animate = () => {
+      pulseRef.current += 0.05;
+      drawMagneticField();
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [strength]);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute w-[50%] object-contain h-[100%] left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
+      style={{
+        // zIndex: 100,
+        opacity: strength > 0 ? 1 : 0,
+        transition: "opacity 0.3s ease",
+      }}
+    />
   );
 };
