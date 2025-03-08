@@ -516,16 +516,15 @@ const MagneticPropertiesLab = () => {
               backgroundSize: "contain",
               backgroundRepeat: "no-repeat",
             }}
-            className="absolute right-0 bottom-5 w-[15vmin] h-[15vmin] rounded-md flex flex-col items-center justify-center"
+            className="absolute right-0 bottom-5 w-[15vmin] h-[15vmin] overflow-hidden rounded-md flex items-center justify-center"
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
-            <div>
               {/* Display items in the bin */}
-              <div className="absolute ">
+              <div className="">
                 {materialPositions.aluminum.inBin && (
                   <div
-                    className="m-1 flex items-center justify-center"
+                    className="flex items-center justify-center"
                     style={{
                       backgroundImage: "url('aluminum.png')",
                       backgroundSize: "contain",
@@ -545,8 +544,8 @@ const MagneticPropertiesLab = () => {
                       backgroundImage: "url('glass.png')",
                       backgroundSize: "contain",
                       backgroundRepeat: "no-repeat",
-                      width: "6vmin",
-                      height: "6vmin",
+                      width: "5vmin",
+                      height: "5vmin",
                       opacity: 1,
                     }}
                   >
@@ -554,7 +553,6 @@ const MagneticPropertiesLab = () => {
                   </div>
                 )}
               </div>
-            </div>
           </div>
         </div>
       </div>
