@@ -41,7 +41,7 @@ const MagneticPropertiesLab = () => {
   const [distanceData, setDistanceData] = useState([]);
   const [ironPosition, setIronPosition] = useState(0);
   const [sliderUsed, setSliderUsed] = useState(false);
-
+  const [maxIronPosition, setMaxIronPosition] = useState(0);
   // Material positions state
   const [materialPositions, setMaterialPositions] = useState({
     aluminum: { inBin: false, originalPos: { top: "25%", right: "10%" } },
@@ -59,6 +59,7 @@ const MagneticPropertiesLab = () => {
   const resetExperiment = () => {
     setIronAttached(false);
     setIronPosition(0);
+    setMaxIronPosition(0); // Reset the max position
     setMaterialPositions({
       aluminum: { inBin: false, originalPos: { top: "25%", right: "10%" } },
       glass: { inBin: false, originalPos: { top: "75%", right: "10%" } },
@@ -78,7 +79,12 @@ const MagneticPropertiesLab = () => {
     if (magnetStrength > 20) {
       // Calculate how far the iron should move based on magnet strength
       const attractionDistance = Math.min(100, magnetStrength * 1.2);
-      setIronPosition(attractionDistance);
+
+      // Only update position if it would move iron further toward magnet
+      if (attractionDistance > ironPosition) {
+        setIronPosition(attractionDistance);
+        setMaxIronPosition(attractionDistance);
+      }
 
       // Only set as fully attached when strength is high enough
       if (magnetStrength > 70) {
@@ -86,11 +92,15 @@ const MagneticPropertiesLab = () => {
       } else {
         setIronAttached(false);
       }
-    } else {
-      setIronPosition(0);
-      setIronAttached(false);
     }
-  }, [magnetStrength]);
+    // REMOVE THIS ENTIRE ELSE IF BLOCK!
+    /* else if (magnetStrength === 0) {
+    // Only reset position when strength is completely turned off
+    setIronPosition(0);
+    setMaxIronPosition(0);
+    setIronAttached(false);
+  } */
+  }, [magnetStrength, ironPosition]);
 
   // Animation for magnetic field
   useEffect(() => {
@@ -183,7 +193,30 @@ const MagneticPropertiesLab = () => {
   const handleDragEnd = () => {
     setDraggedItem(null);
   };
+  const recordAllMaterials = () => {
+    // Record data for all materials
+    materials.forEach((material) => recordTest(material.id));
 
+    // Hard-code the iron distance data for the graph
+    const ironData = [];
+    for (let strength = 10; strength <= 100; strength += 10) {
+      ironData.push({
+        strength: strength,
+        distance: Math.round(90 - strength * 0.85), // Distance decreases as strength increases
+        material: "Iron",
+      });
+    }
+
+    setDistanceData(ironData);
+
+    // Switch to show the table tab first
+    setActiveTab("table");
+
+    // After 2 seconds, switch to show the graph
+    setTimeout(() => {
+      setActiveTab("graph");
+    }, 2000);
+  };
   const renderTabContent = (tab) => {
     if (!activeTab || activeTab !== tab) return null;
 
@@ -219,7 +252,7 @@ const MagneticPropertiesLab = () => {
                 </tr>
               </thead>
               <tbody>
-                {testedMaterials.map((material) => (
+                {materials.map((material) => (
                   <tr key={material.id}>
                     <td className="p-2 border border-gray-300">
                       {material.name}
@@ -353,41 +386,41 @@ const MagneticPropertiesLab = () => {
                 {/* Materials area - positioned on the right side */}
                 <div className="absolute text-white font-bold right-[25%] top-0 h-full flex flex-col justify-evenly items-start">
                   {/* Aluminum - at the top */}
-                  
+
+                  <div
+                    style={{
+                      backgroundImage: "url('aluminum.png')",
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                      opacity: `${materialPositions.aluminum.inBin ? 0 : 1}`,
+                    }}
+                    draggable={sliderUsed}
+                    onDragStart={(e) =>
+                      sliderUsed && handleDragStart(e, "aluminum")
+                    }
+                    onDragEnd={handleDragEnd}
+                    className={`relative rotate-90 flex items-center mb-2 ${
+                      sliderUsed ? "cursor-move" : "cursor-default"
+                    }`}
+                  >
                     <div
+                      className="flex items-center justify-center"
+                      onClick={() => recordTest("aluminum")}
                       style={{
-                        backgroundImage: "url('aluminum.png')",
-                        backgroundSize: "contain",
-                        backgroundRepeat: "no-repeat",
-                        opacity: `${materialPositions.aluminum.inBin ? 0 : 1}`,
+                        // backgroundColor: materials[1].color,
+                        width: "8vmin",
+                        height: "8vmin",
+                        borderRadius: "50%",
+                        position: "relative",
+                        // border: "2px solid #555",
+                        cursor: "move",
                       }}
-                      draggable={sliderUsed}
-                      onDragStart={(e) =>
-                        sliderUsed && handleDragStart(e, "aluminum")
-                      }
-                      onDragEnd={handleDragEnd}
-                      className={`relative rotate-90 flex items-center mb-2 ${
-                        sliderUsed ? "cursor-move" : "cursor-default"
-                      }`}
                     >
-                      <div
-                        className="flex items-center justify-center"
-                        onClick={() => recordTest("aluminum")}
-                        style={{
-                          // backgroundColor: materials[1].color,
-                          width: "8vmin",
-                          height: "8vmin",
-                          borderRadius: "50%",
-                          position: "relative",
-                          // border: "2px solid #555",
-                          cursor: "move",
-                        }}
-                      >
-                        <div className="absolute  w-full text-center -bottom-6 ">
-                          Aluminum
-                        </div>
+                      <div className="absolute  w-full text-center -bottom-6 ">
+                        Aluminum
                       </div>
                     </div>
+                  </div>
 
                   {/* Iron - in the middle (not draggable) */}
                   <div className="relative rotate-90 flex items-center mb-2">
@@ -416,40 +449,40 @@ const MagneticPropertiesLab = () => {
                   </div>
 
                   {/* Glass - at the bottom */}
-                  
+
+                  <div
+                    style={{
+                      backgroundImage: "url('glass.png')",
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                      opacity: `${materialPositions.glass.inBin ? 0 : 1}`,
+                    }}
+                    draggable={sliderUsed} // Only draggable if slider has been used
+                    onDragStart={(e) =>
+                      sliderUsed && handleDragStart(e, "glass")
+                    }
+                    onDragEnd={handleDragEnd}
+                    className={`relative rotate-90 flex items-center ${
+                      sliderUsed ? "cursor-move" : "cursor-pointer"
+                    }`}
+                  >
                     <div
+                      className="flex items-center justify-center"
+                      onClick={() => recordTest("glass")}
                       style={{
-                        backgroundImage: "url('glass.png')",
-                        backgroundSize: "contain",
-                        backgroundRepeat: "no-repeat",
-                        opacity: `${materialPositions.glass.inBin ? 0 : 1}`,
+                        width: "8vmin",
+                        height: "8vmin",
+                        borderRadius: "50%",
+                        position: "relative",
+                        opacity: 0.8,
+                        cursor: "move",
                       }}
-                      draggable={sliderUsed} // Only draggable if slider has been used
-                      onDragStart={(e) =>
-                        sliderUsed && handleDragStart(e, "glass")
-                      }
-                      onDragEnd={handleDragEnd}
-                      className={`relative rotate-90 flex items-center ${
-                        sliderUsed ? "cursor-move" : "cursor-pointer"
-                      }`}
                     >
-                      <div
-                        className="flex items-center justify-center"
-                        onClick={() => recordTest("glass")}
-                        style={{
-                          width: "8vmin",
-                          height: "8vmin",
-                          borderRadius: "50%",
-                          position: "relative",
-                          opacity: 0.8,
-                          cursor: "move",
-                        }}
-                      >
-                        <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
-                          Glass
-                        </div>
+                      <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
+                        Glass
                       </div>
                     </div>
+                  </div>
                 </div>
                 {/* Bin for non-magnetic materials */}
               </div>
@@ -458,10 +491,10 @@ const MagneticPropertiesLab = () => {
           {/* Control Panel */}
           <ControlPanel
             magnetStrength={magnetStrength}
-            setMagnetStrength={handleSliderChange} // Use the new handler
+            setMagnetStrength={handleSliderChange}
             resetExperiment={resetExperiment}
-            recordTest={(id) => recordTest(id)}
-            sliderUsed={sliderUsed} // Pass this state
+            recordTest={recordAllMaterials} // Use the new function instead
+            sliderUsed={sliderUsed}
           />
           {/* Bin for non-magnetic materials */}
           <div
@@ -538,6 +571,7 @@ const ControlPanel = ({
   setMagnetStrength,
   resetExperiment,
   recordTest,
+  sliderUsed,
 }) => {
   return (
     <div className="space-y-6 absolute  md:bottom-5 bottom-5 flex justify-center items-center w-full">
@@ -562,7 +596,7 @@ const ControlPanel = ({
 
         {/* Reset button */}
 
-        <div className="flex gap-10 items-center justify-center  ">
+        <div className="flex gap-10 items-center justify-center">
           <button
             onClick={recordTest}
             className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
