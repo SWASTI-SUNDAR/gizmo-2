@@ -482,6 +482,11 @@ const MagneticPropertiesLab = () => {
             recordTest={recordAllMaterials} // Use the new function instead
             sliderUsed={sliderUsed}
           />
+          <div className="absolute bottom-0 right-0 w-fit text-center">
+            <span className="font-bold text-sm px-2 py-1 rounded">
+              Non-Magnetic Bin
+            </span>
+          </div>
           {/* Bin for non-magnetic materials */}
           <div
             style={{
@@ -493,38 +498,40 @@ const MagneticPropertiesLab = () => {
             onDragOver={handleDragOver}
             onDrop={handleDrop}
           >
-            {/* Display items in the bin */}
-            <div className="absolute ">
-              {materialPositions.aluminum.inBin && (
-                <div
-                  className="m-1 flex items-center justify-center"
-                  style={{
-                    backgroundImage: "url('aluminum.png')",
-                    backgroundSize: "contain",
-                    backgroundRepeat: "no-repeat",
-                    width: "5vmin",
-                    height: "5vmin",
-                  }}
-                >
-                  <span className="text-gray-700 font-bold text-xs">Al</span>
-                </div>
-              )}
+            <div>
+              {/* Display items in the bin */}
+              <div className="absolute ">
+                {materialPositions.aluminum.inBin && (
+                  <div
+                    className="m-1 flex items-center justify-center"
+                    style={{
+                      backgroundImage: "url('aluminum.png')",
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                      width: "5vmin",
+                      height: "5vmin",
+                    }}
+                  >
+                    <span className=" font-bold text-xs">Aluminium</span>
+                  </div>
+                )}
 
-              {materialPositions.glass.inBin && (
-                <div
-                  className="m-1 flex items-center justify-center"
-                  style={{
-                    backgroundImage: "url('glass.png')",
-                    backgroundSize: "contain",
-                    backgroundRepeat: "no-repeat",
-                    width: "6vmin",
-                    height: "6vmin",
-                    opacity: 1.8,
-                  }}
-                >
-                  <span className="text-gray-700 font-bold text-xs">Si</span>
-                </div>
-              )}
+                {materialPositions.glass.inBin && (
+                  <div
+                    className="m-1 flex items-center justify-center"
+                    style={{
+                      backgroundImage: "url('glass.png')",
+                      backgroundSize: "contain",
+                      backgroundRepeat: "no-repeat",
+                      width: "6vmin",
+                      height: "6vmin",
+                      opacity: 1,
+                    }}
+                  >
+                    <span className="font-bold text-xs">Glass</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -613,10 +620,10 @@ const MagneticField = ({ strength }) => {
 
     // This controls the size of the canvas itself
     const resizeCanvas = () => {
-      // ADJUST THIS LINE - decrease the multiplier from 3 to a smaller value
-      const size = Math.max(200, strength * 1); // Changed from 3 to 2
-      canvas.width = size ;
-      canvas.height = size ;
+      // Increase base size and use a higher multiplier to accommodate larger rings
+      const size = Math.max(280, strength * 2.5);
+      canvas.width = size;
+      canvas.height = size;
     };
 
     resizeCanvas();
@@ -630,13 +637,23 @@ const MagneticField = ({ strength }) => {
       const centerY = canvas.height / 2;
       const fieldStrength = Math.max(10, strength);
 
+      // Calculate max safe radius to ensure rings stay visible
+      // This ensures we never draw beyond 80% of the distance to canvas edge
+      const maxSafeRadius = Math.min(centerX, centerY) * 0.9;
+
+      // Scale factor to keep rings within bounds
+      const largestTheoreticalRing = 40 + fieldStrength * (4 * 0.3 + 0.3) + 5;
+      const scaleFactor =
+        largestTheoreticalRing > maxSafeRadius
+          ? maxSafeRadius / largestTheoreticalRing
+          : 1;
+
       // Draw multiple field rings
       for (let i = 0; i < 5; i++) {
         // Calculate radius with pulsing effect
-        let radius =
-          20 + // Base size (keep this)
-          fieldStrength * (i * 0.3 + 0.3) + // Change 0.5 to 0.3 to make rings smaller
-          Math.sin(pulseRef.current - i * 0.5) * 5; // Animation effect
+        let baseRadius = 20 + fieldStrength * (i * 0.2 + 0.2); // Reduced multiplier from 0.3 to 0.2
+        let animationOffset = Math.sin(pulseRef.current - i * 0.5) * 5;
+        let radius = (baseRadius + animationOffset) * scaleFactor; // Apply scale factor
 
         // Calculate opacity based on strength and ring number
         let alpha = Math.max(0.05, (fieldStrength / 100) * (0.5 - i * 0.1));
@@ -657,7 +674,7 @@ const MagneticField = ({ strength }) => {
         }
       }
 
-      // Add particles if strong enough
+      // Add particles if strong enough - also apply scale factor
       if (strength > 30) {
         const particleCount = Math.floor(strength / 10);
 
@@ -665,7 +682,8 @@ const MagneticField = ({ strength }) => {
           const angle =
             pulseRef.current * 0.5 + (i / particleCount) * Math.PI * 2;
           const distance =
-            30 + strength * 0.3 + Math.sin(pulseRef.current + i) * 10;
+            (30 + strength * 0.2 + Math.sin(pulseRef.current + i) * 10) *
+            scaleFactor;
           const x = centerX + Math.cos(angle) * distance;
           const y = centerY + Math.sin(angle) * distance;
 
@@ -699,7 +717,6 @@ const MagneticField = ({ strength }) => {
       ref={canvasRef}
       className="absolute w-[50%] object-contain h-[100%] left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
       style={{
-        // zIndex: 100,
         opacity: strength > 0 ? 1 : 0,
         transition: "opacity 0.3s ease",
       }}
