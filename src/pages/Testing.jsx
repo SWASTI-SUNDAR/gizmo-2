@@ -64,6 +64,7 @@ const MagneticPropertiesLab = () => {
       glass: { inBin: false, originalPos: { top: "75%", right: "10%" } },
     });
     setSliderUsed(false);
+    setMagnetStrength(0);
   };
 
   // Calculate iron movement speed based on magnet strength
@@ -136,12 +137,20 @@ const MagneticPropertiesLab = () => {
     if (materialId === "iron") return; // Cannot drag iron (it's controlled by magnet)
     setDraggedItem(materialId);
 
-    // Set ghost drag image (optional)
+    // Instead of setting a transparent image, use the actual element with offset
+    // This will make it appear like you're holding the material
+    // We need to create a clone of the element with proper size
     const material = materials.find((m) => m.id === materialId);
-    const ghostImg = new Image();
-    ghostImg.src =
-      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // 1px transparent GIF
-    e.dataTransfer.setDragImage(ghostImg, 0, 0);
+    const img = new Image();
+    img.src = `${materialId}.png`;
+
+    // Wait for the image to load before setting it as drag image
+    img.onload = () => {
+      // Set the drag image with proper offset to appear centered under cursor
+      // const offsetX = img.width ;
+      // const offsetY = img.height ;
+      e.dataTransfer.setDragImage(img, offsetX, offsetY);
+    };
 
     e.dataTransfer.setData("text/plain", materialId);
     e.dataTransfer.effectAllowed = "move";
@@ -313,7 +322,6 @@ const MagneticPropertiesLab = () => {
             {/* Container for simulation with aspect ratio */}
             <div className="relative w-full pt-[56.25%]">
               {" "}
-              {/* 16:9 aspect ratio */}
               <div className="">
                 {/* Magnetic Field Visualization */}
                 <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2">
@@ -335,7 +343,7 @@ const MagneticPropertiesLab = () => {
                 <div className="absolute rotate-90  left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2">
                   <img
                     src="magnet.png"
-                    className="w-16 h-16 object-cover"
+                    className="w-auto h-16 object-cover"
                     alt=""
                   />
                 </div>
@@ -422,19 +430,17 @@ const MagneticPropertiesLab = () => {
                       }
                       onDragEnd={handleDragEnd}
                       className={`relative rotate-90 flex items-center ${
-                        sliderUsed ? "cursor-move" : "cursor-default"
+                        sliderUsed ? "cursor-move" : "cursor-pointer"
                       }`}
                     >
                       <div
                         className="flex items-center justify-center"
                         onClick={() => recordTest("glass")}
                         style={{
-                          // backgroundColor: materials[2].color,
                           width: "8vmin",
                           height: "8vmin",
                           borderRadius: "50%",
                           position: "relative",
-                          // border: "2px solid #555",
                           opacity: 0.8,
                           cursor: "move",
                         }}
