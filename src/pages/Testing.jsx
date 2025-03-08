@@ -9,6 +9,29 @@ import {
   Tooltip,
 } from "recharts";
 
+// Materials data
+const materials = [
+  {
+    id: "iron",
+    name: "Iron",
+    isMagnetic: true,
+    attractionStrength: 0.9,
+    color: "#808080",
+  },
+  {
+    id: "aluminum",
+    name: "Aluminum",
+    isMagnetic: false,
+    color: "#C0C0C0",
+  },
+  {
+    id: "glass",
+    name: "Glass",
+    isMagnetic: false,
+    color: "#ADD8E6",
+  },
+];
+
 const MagneticPropertiesLab = () => {
   // Core state
   const [magnetStrength, setMagnetStrength] = useState(50);
@@ -18,37 +41,27 @@ const MagneticPropertiesLab = () => {
   const [distanceData, setDistanceData] = useState([]);
   const [ironPosition, setIronPosition] = useState(0);
 
+  // Material positions state
+  const [materialPositions, setMaterialPositions] = useState({
+    aluminum: { inBin: false, originalPos: { top: "25%", right: "10%" } },
+    glass: { inBin: false, originalPos: { top: "75%", right: "10%" } },
+  });
+
   // Animation state
   const pulseRef = useRef(0);
   const animationRef = useRef(null);
 
-  // Materials data
-  const materials = [
-    {
-      id: "iron",
-      name: "Iron",
-      isMagnetic: true,
-      attractionStrength: 0.9,
-      color: "#808080",
-    },
-    {
-      id: "aluminum",
-      name: "Aluminum",
-      isMagnetic: false,
-      color: "#C0C0C0",
-    },
-    {
-      id: "glass",
-      name: "Glass",
-      isMagnetic: false,
-      color: "#ADD8E6",
-    },
-  ];
+  // Drag state
+  const [draggedItem, setDraggedItem] = useState(null);
 
   // Reset experiment
   const resetExperiment = () => {
     setIronAttached(false);
     setIronPosition(0);
+    setMaterialPositions({
+      aluminum: { inBin: false, originalPos: { top: "25%", right: "10%" } },
+      glass: { inBin: false, originalPos: { top: "75%", right: "10%" } },
+    });
   };
 
   // Calculate iron movement speed based on magnet strength
@@ -116,6 +129,50 @@ const MagneticPropertiesLab = () => {
     }
   };
 
+  // Drag handlers
+  const handleDragStart = (e, materialId) => {
+    if (materialId === "iron") return; // Cannot drag iron (it's controlled by magnet)
+    setDraggedItem(materialId);
+
+    // Set ghost drag image (optional)
+    const material = materials.find((m) => m.id === materialId);
+    const ghostImg = new Image();
+    ghostImg.src =
+      "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"; // 1px transparent GIF
+    e.dataTransfer.setDragImage(ghostImg, 0, 0);
+
+    e.dataTransfer.setData("text/plain", materialId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    const materialId = e.dataTransfer.getData("text/plain");
+
+    if (materialId && materialId !== "iron") {
+      setMaterialPositions((prev) => ({
+        ...prev,
+        [materialId]: {
+          ...prev[materialId],
+          inBin: true,
+        },
+      }));
+
+      recordTest(materialId); // Record test for dropped material
+    }
+
+    setDraggedItem(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+  };
+   
   const renderTabContent = (tab) => {
     if (!activeTab || activeTab !== tab) return null;
 
@@ -228,9 +285,10 @@ const MagneticPropertiesLab = () => {
         backgroundImage: "url('page-two-bg.png')",
       }}
     >
-      <div className="px-4 sm:px-8 md:px-16 lg:px-28 h-full  max-w-screen-2xl mx-auto p-6">
+      <div className="px-4 sm:px-8 md:px-16 lg:px-28 h-full max-w-screen-2xl mx-auto p-6">
         <div className="relative space-y-6 h-full mt-6">
-          <div className="md:absolute hidden md:block md:top-12 md:w-96 bg-white p-2 md:p-4 rounded-lg shadow-lg space-y-2">
+          {/* Tabs */}
+          <div className="md:absolute hidden md:block md:top-12 md:w-80 bg-white p-2 md:p-4 rounded-lg shadow-lg space-y-2">
             {["description", "table", "graph"].map((tab) => (
               <div key={tab} className="border-b">
                 <button
@@ -243,13 +301,13 @@ const MagneticPropertiesLab = () => {
               </div>
             ))}
           </div>
-          {/* Simulation Area */}
-          <div className="bg-white h-[40%] absolute max-w-md border border-gray-300 rounded-lg p-4 overflow-hidden bottom-32 left-0 right-0 mx-auto shadow-lg">
+          ;{/* Simulation Area */}
+          <div className="bg-white h-[50%] absolute max-w-xl border border-gray-300 rounded-lg p-4 overflow-hidden bottom-32 left-0 right-0 mx-auto shadow-lg">
             {/* Container for simulation with aspect ratio */}
             <div className="relative w-full pt-[56.25%]">
               {" "}
               {/* 16:9 aspect ratio */}
-              <div className="absolute inset-0">
+              <div className="">
                 {/* Magnetic Field Visualization */}
                 <div className="absolute left-1/4 top-1/2 transform -translate-y-1/2">
                   {[...Array(5)].map((_, i) => (
@@ -277,37 +335,54 @@ const MagneticPropertiesLab = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Bin for non-magnetic materials */}
+
                 {/* Materials area - positioned on the right side */}
-                <div className="absolute right-[10%] top-0 h-full flex flex-col justify-evenly items-start">
-                  <div className="relative flex items-center mb-6">
+                <div className="absolute right-[25%] top-0 h-full flex flex-col justify-evenly items-start">
+                  {/* Aluminum - at the top */}
+                  {!materialPositions.aluminum.inBin && (
                     <div
-                      className="cursor-pointer flex items-center justify-center"
-                      onClick={() => recordTest("aluminum")}
                       style={{
-                        backgroundColor: materials[1].color,
-                        width: "8vmin",
-                        height: "8vmin",
-                        borderRadius: "50%",
-                        position: "relative",
-                        border: "2px solid #555",
+                        backgroundImage: "url('aluminum.png')",
+                        backgroundSize: "contain",
+                        backgroundRepeat: "no-repeat",
                       }}
+                      draggable="true"
+                      onDragStart={(e) => handleDragStart(e, "aluminum")}
+                      onDragEnd={handleDragEnd}
+                      className="relative flex items-center mb-2 cursor-move"
                     >
-                      <span className="text-gray-700 font-bold text-sm sm:text-base">
-                        Al
-                      </span>
-                      <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
-                        Aluminum
+                      <div
+                        className="flex items-center justify-center"
+                        onClick={() => recordTest("aluminum")}
+                        style={{
+                          // backgroundColor: materials[1].color,
+                          width: "8vmin",
+                          height: "8vmin",
+                          borderRadius: "50%",
+                          position: "relative",
+                          // border: "2px solid #555",
+                          cursor: "move",
+                        }}
+                      >
+                        <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
+                          Aluminum
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  {/* Iron - in the middle */}
-                  <div className="relative flex items-center mb-6">
+                  )}
+
+                  {/* Iron - in the middle (not draggable) */}
+                  <div className="relative flex items-center mb-2">
                     <div
                       className="cursor-pointer flex items-center justify-center"
                       onClick={() => recordTest("iron")}
                       style={{
+                        backgroundImage: "url('iron.png')",
+                        backgroundSize: "contain",
+                        backgroundRepeat: "no-repeat",
                         right: `${ironPosition * 0.3}vmin`,
-                        backgroundColor: materials[0].color,
                         width: "8vmin",
                         height: "8vmin",
                         borderRadius: "50%",
@@ -315,43 +390,95 @@ const MagneticPropertiesLab = () => {
                         transition: `right ${calculateMovementSpeed()}s ${
                           ironAttached ? "ease-in" : "ease-out"
                         }`,
-                        border: "2px solid #555",
                         transform: ironAttached ? "scale(1.05)" : "scale(1)",
                       }}
                     >
-                      <span className="text-white font-bold text-sm sm:text-base">
-                        Fe
-                      </span>
                       <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
                         Iron
                       </div>
                     </div>
                   </div>
 
-                  {/* Aluminum - at the top */}
-
                   {/* Glass - at the bottom */}
-                  <div className="relative flex items-center">
+                  {!materialPositions.glass.inBin && (
                     <div
-                      className="cursor-pointer flex items-center justify-center"
-                      onClick={() => recordTest("glass")}
                       style={{
-                        backgroundColor: materials[2].color,
-                        width: "8vmin",
-                        height: "8vmin",
-                        borderRadius: "50%",
-                        position: "relative",
-                        border: "2px solid #555",
-                        opacity: 0.8,
+                        backgroundImage: "url('glass.png')",
+                        backgroundSize: "contain",
+                        backgroundRepeat: "no-repeat",
                       }}
+                      draggable="true"
+                      onDragStart={(e) => handleDragStart(e, "glass")}
+                      onDragEnd={handleDragEnd}
+                      className="relative flex items-center cursor-move"
                     >
-                      <span className="text-gray-700 font-bold text-sm sm:text-base">
-                        Si
-                      </span>
-                      <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
-                        Glass
+                      <div
+                        className="flex items-center justify-center"
+                        onClick={() => recordTest("glass")}
+                        style={{
+                          // backgroundColor: materials[2].color,
+                          width: "8vmin",
+                          height: "8vmin",
+                          borderRadius: "50%",
+                          position: "relative",
+                          // border: "2px solid #555",
+                          opacity: 0.8,
+                          cursor: "move",
+                        }}
+                      >
+                        <div className="absolute w-full text-center -bottom-6 text-xs sm:text-sm">
+                          Glass
+                        </div>
                       </div>
                     </div>
+                  )}
+                </div>
+                {/* Bin for non-magnetic materials */}
+                <div
+                  style={{
+                    backgroundImage: "url('bin.png')",
+                    backgroundSize: "contain",
+                  }}
+                  className="absolute -right-5 bottom-0 w-[12vmin] h-[12vmin] rounded-md flex flex-col items-center justify-center"
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  {/* Display items in the bin */}
+                  <div className="absolute ">
+                    {materialPositions.aluminum.inBin && (
+                      <div
+                        className="m-1 flex items-center justify-center"
+                        style={{
+                          backgroundImage: "url('aluminum.png')",
+                          backgroundSize: "contain",
+                          backgroundRepeat: "no-repeat",
+                          width: "5vmin",
+                          height: "5vmin",
+                        }}
+                      >
+                        <span className="text-gray-700 font-bold text-xs">
+                          Al
+                        </span>
+                      </div>
+                    )}
+
+                    {materialPositions.glass.inBin && (
+                      <div
+                        className="m-1 flex items-center justify-center"
+                        style={{
+                          backgroundImage: "url('glass.png')",
+                          backgroundSize: "contain",
+                          backgroundRepeat: "no-repeat",
+                          width: "6vmin",
+                          height: "6vmin",
+                          opacity: 1.8,
+                        }}
+                      >
+                        <span className="text-gray-700 font-bold text-xs">
+                          Si
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -365,7 +492,7 @@ const MagneticPropertiesLab = () => {
           />
         </div>
       </div>
-      <div className="relative  bg-white rounded-lg shadow-lg p-6 flex flex-col">
+      <div className="relative bg-white rounded-lg shadow-lg p-6 flex flex-col">
         <h1 className="text-2xl font-bold text-center mb-4">
           Magnetic Properties Lab
         </h1>
@@ -395,7 +522,6 @@ const MagneticPropertiesLab = () => {
 };
 
 export default MagneticPropertiesLab;
-
 const ControlPanel = ({
   magnetStrength,
   setMagnetStrength,
@@ -443,3 +569,7 @@ const ControlPanel = ({
     </div>
   );
 };
+
+
+
+
