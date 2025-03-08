@@ -33,23 +33,12 @@ const ConductivitySimulation = () => {
 
   // Effect for test activation
   useEffect(() => {
-    if (isTestActive) {
-      if (materials[currentMaterial].conductive) {
-        setBrightness(Math.min(100, voltage * 100));
-      } else {
-        setBrightness(0);
-      }
-
-      // Auto-reset test after 2 seconds
-      const timer = setTimeout(() => {
-        setIsTestActive(false);
-      }, 2000);
-
-      return () => clearTimeout(timer);
+    if (materials[currentMaterial].conductive) {
+      setBrightness(Math.min(100, voltage * 100));
     } else {
       setBrightness(0);
     }
-  }, [isTestActive, currentMaterial, voltage]);
+  }, [currentMaterial, voltage]);
 
   // Handle material selection
   const selectMaterial = (material) => {
@@ -241,21 +230,58 @@ const ConductivitySimulation = () => {
 export default ConductivitySimulation;
 
 const BulbCircuit = ({ brightness }) => {
+  // Whether the bulb is on (any brightness greater than 0)
+  const isOn = brightness > 0;
+
+  // Normalized brightness to use in calculations (0.0-1.0)
+  const normalizedBrightness = brightness / 100;
+
+  // Dynamic color based on brightness - from warm yellow to bright white
+  const bulbColor = isOn
+    ? `rgb(255, ${Math.min(255, 200 + brightness * 0.55)}, ${Math.min(
+        255,
+        160 + brightness * 0.95
+      )})`
+    : "#FFEB85";
+
+  // Animation speed for electron flow
+  const animationSpeed = isOn
+    ? Math.max(0.5, 2 - normalizedBrightness * 1.5)
+    : 0;
+
   return (
-    <div className="absolute left-1/2 transform -translate-x-1/2  bottom-16">
+    <div className="absolute left-1/2 transform -translate-x-1/2 bottom-16">
+      {/* Light rays (visible when bulb is on) */}
+      {isOn && (
+        <div
+          className="absolute w-64 h-64 rounded-full bg-yellow-200 bg-opacity-50 blur-2xl z-0"
+          style={{
+            boxShadow: `0 0 40px 20px ${bulbColor}`,
+            animation: "flicker 0.1s ease-in-out infinite",
+          }}
+        ></div>
+      )}
       {/* Light Bulb with Glow Effect */}
-      <div className="">
-        {/* Bulb Glow Effect */}
-        {brightness > 0 && (
+      <div className="relative">
+        {/* Bulb outer glow */}
+        {isOn && (
           <div
-            className="absolute inset-0 rounded-full blur-xl z-0"
+            className="absolute rounded-full blur-2xl z-0"
             style={{
-              backgroundColor: `rgba(255, 255, 0, ${brightness / 100})`,
-              opacity: brightness / 100,
-              transform: `scale(${1 + brightness / 100})`,
+              width: "150px",
+              height: "180px",
+              top: "-20px",
+              left: "50%",
+              transform: `translateX(-50%) scale(${
+                1 + normalizedBrightness * 0.5
+              })`,
+              backgroundColor: bulbColor,
+              opacity: normalizedBrightness * 0.8,
+              boxShadow: `0 0 40px 20px ${bulbColor}`,
             }}
           ></div>
         )}
+
         <svg
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 400 500"
@@ -263,45 +289,86 @@ const BulbCircuit = ({ brightness }) => {
         >
           <defs>
             <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="10" result="blur" />
+              <feGaussianBlur stdDeviation={isOn ? 8 : 3} result="blur" />
               <feComposite in="SourceGraphic" in2="blur" operator="over" />
             </filter>
+
+            {/* Glass texture */}
+            <linearGradient id="glass" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.4)" />
+              <stop offset="50%" stopColor="rgba(255,255,255,0.1)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.3)" />
+            </linearGradient>
+
+            {/* Animation path for electrons */}
+            <path
+              id="wirePath1"
+              d="M175 195 C130 220, 150 270, 120 300 C100 330, 120 380, 100 400 L100 420"
+            />
+            <path
+              id="wirePath2"
+              d="M225 195 C270 220, 250 270, 280 300 C300 330, 280 380, 300 400 L300 420"
+            />
           </defs>
-          {/* Glow effect based on brightness */}
-          {brightness > 0 && (
+
+          {/* Light Bulb internal glow */}
+          {isOn && (
             <ellipse
               cx="200"
               cy="100"
               rx="70"
               ry="90"
-              fill={`rgba(255, 255, 0, ${brightness / 150})`}
+              fill={bulbColor}
               filter="url(#glow)"
-              opacity={brightness / 100}
+              opacity={normalizedBrightness}
             />
           )}
-          {/* Light bulb */}
+
+          {/* Light bulb glass */}
           <ellipse
             cx="200"
             cy="100"
             rx="60"
             ry="80"
-            fill="#FFEB85"
-            stroke="black"
-            strokeWidth="1"
+            fill={isOn ? bulbColor : "#FFEB85"}
+            stroke="#ddd"
+            strokeWidth="2"
+            style={{
+              filter: isOn ? "url(#glow)" : "none",
+            }}
           />
+          {/* Glass reflections */}
+          <ellipse
+            cx="180"
+            cy="80"
+            rx="20"
+            ry="30"
+            fill="url(#glass)"
+            opacity="0.6"
+          />
+
+          {/* Connection to base */}
           <path
             d="M160 150 L160 170 L240 170 L240 150"
             fill="white"
             stroke="black"
             strokeWidth="1"
           />
-          {/* Filament */}
+
+          {/* Animated filament */}
           <path
             d="M190 120 L190 90 L180 80 L220 80 L210 90 L210 120"
             fill="none"
-            stroke={brightness > 0 ? "#FFB700" : "#aaa"}
-            strokeWidth="1.5"
+            stroke={isOn ? "#FFD700" : "#aaa"}
+            strokeWidth={isOn ? 2 : 1.5}
+            style={{
+              filter: isOn ? "drop-shadow(0 0 3px #FF6700)" : "none",
+              animation: isOn
+                ? "filamentGlow 1s ease-in-out infinite alternate"
+                : "none",
+            }}
           />
+
           {/* Base */}
           <rect
             x="170"
@@ -321,6 +388,7 @@ const BulbCircuit = ({ brightness }) => {
             stroke="black"
             strokeWidth="1"
           />
+
           {/* Wires */}
           <path
             d="M175 195 C130 220, 150 270, 120 300 C100 330, 120 380, 100 400 L100 420"
@@ -334,6 +402,30 @@ const BulbCircuit = ({ brightness }) => {
             stroke="#22C55E"
             strokeWidth="4"
           />
+
+          {/* Electrons moving through wires when conducting */}
+          {isOn &&
+            [...Array(8)].map((_, i) => (
+              <React.Fragment key={i}>
+                <circle r="3" fill="#ffff00">
+                  <animateMotion
+                    dur={`${animationSpeed + i * 0.2}s`}
+                    repeatCount="indefinite"
+                    path="M175 195 C130 220, 150 270, 120 300 C100 330, 120 380, 100 400 L100 420"
+                    rotate="auto"
+                  />
+                </circle>
+                <circle r="3" fill="#ffff00">
+                  <animateMotion
+                    dur={`${animationSpeed + i * 0.2}s`}
+                    repeatCount="indefinite"
+                    path="M225 195 C270 220, 250 270, 280 300 C300 330, 280 380, 300 400 L300 420"
+                    rotate="auto"
+                  />
+                </circle>
+              </React.Fragment>
+            ))}
+
           {/* Circuit Board */}
           <rect
             x="80"
@@ -344,11 +436,13 @@ const BulbCircuit = ({ brightness }) => {
             stroke="black"
             strokeWidth="1"
           />
+
+          {/* Circuit components */}
           <text
             x="200"
             y="455"
             fontFamily="Arial"
-            fontSize="30"
+            fontSize="20"
             fill="#ffffff"
             textAnchor="middle"
           >
@@ -356,6 +450,46 @@ const BulbCircuit = ({ brightness }) => {
           </text>
         </svg>
       </div>
+
+      {/* Add keyframe animations */}
+      <style jsx>{`
+        @keyframes flicker {
+          0%,
+          100% {
+            opacity: ${normalizedBrightness * 0.6};
+            transform: translateX(-50%) rotate(${Math.random() * 360}deg)
+              scaleY(1);
+          }
+          50% {
+            opacity: ${normalizedBrightness * 0.3};
+            transform: translateX(-50%) rotate(${Math.random() * 360}deg)
+              scaleY(0.8);
+          }
+        }
+
+        @keyframes filamentGlow {
+          0% {
+            stroke: #ffb700;
+            filter: drop-shadow(0 0 3px #ff6700);
+          }
+          100% {
+            stroke: #ffdd00;
+            filter: drop-shadow(0 0 5px #ffaa00);
+          }
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: ${normalizedBrightness * 0.8};
+            transform: scale(1);
+          }
+          50% {
+            opacity: ${normalizedBrightness * 0.6};
+            transform: scale(0.95);
+          }
+        }
+      `}</style>
     </div>
   );
 };
@@ -366,8 +500,6 @@ const ControlPanel = ({
   materials,
   selectMaterial,
   currentMaterial,
-  isTestActive,
-  setIsTestActive,
   recordData,
 }) => {
   return (
@@ -424,20 +556,11 @@ const ControlPanel = ({
           ))}
         </div>
 
-        {/* Test button */}
-        <div className="flex gap-5 items-center justify-center w-full">
-          <button
-            onClick={() => setIsTestActive(true)}
-            disabled={isTestActive}
-            className={`bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 ${
-              isTestActive ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-          >
-            Test
-          </button>
+        {/* Record Data button (keeping only this one) */}
+        <div className="flex justify-center items-center w-full">
           <button
             onClick={recordData}
-            className=" bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
           >
             Record Data
           </button>
