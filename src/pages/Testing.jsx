@@ -75,32 +75,58 @@ const MagneticPropertiesLab = () => {
   };
 
   // Monitor magnet strength changes to handle iron attraction
+  // Update the iron movement logic in the useEffect hook
+  // Update the iron movement logic in the useEffect hook
+  // Update the iron movement logic in the useEffect hook
+  // Update the iron movement logic in the useEffect hook
   useEffect(() => {
-    if (magnetStrength > 20) {
-      // Calculate how far the iron should move based on magnet strength
-      const attractionDistance = Math.min(100, magnetStrength * 1.2);
+    // Calculate the current field radius based on magnet strength
+    const calculateMagneticFieldRadius = () => {
+      const baseRadius = 60; // Larger starting field
+      const maxRadius = 240; // Maximum field size at 100% strength
+      return baseRadius + (magnetStrength / 100) * (maxRadius - baseRadius);
+    };
 
-      // Only update position if it would move iron further toward magnet
-      if (attractionDistance > ironPosition) {
-        setIronPosition(attractionDistance);
-        setMaxIronPosition(attractionDistance);
-      }
+    // Calculate field radius and distance to iron
+    const magnetFieldRadius = calculateMagneticFieldRadius();
+    const ironDistance = 90;
+    const touchDistance = ironDistance - magnetFieldRadius;
 
-      // Only set as fully attached when strength is high enough
-      if (magnetStrength > 70) {
-        setIronAttached(true);
-      } else {
-        setIronAttached(false);
+    // Check if we've ever reached 40% strength to enable "latch" behavior
+    const hasReached40Percent = magnetStrength >= 40 || ironPosition > 0;
+
+    // Only move the iron if currently at 40%+ OR if it has been moved before
+    if (hasReached40Percent && touchDistance <= 0) {
+      // Only calculate new position if current strength is 40%+
+      if (magnetStrength >= 40) {
+        // Calculate target position based on current strength
+        const pullStrength = Math.min(100, Math.max(0, magnetStrength * 0.8));
+        const currentPos = ironPosition;
+        const targetPos = pullStrength;
+
+        // Move only a percentage of the way toward the target position
+        const movementRate = 0.05; // Very slow movement
+        const newPosition =
+          currentPos + (targetPos - currentPos) * movementRate;
+
+        // Only update if moving forward (never backward)
+        if (newPosition > currentPos) {
+          setIronPosition(newPosition);
+
+          // Track maximum position reached
+          if (newPosition > maxIronPosition) {
+            setMaxIronPosition(newPosition);
+          }
+        }
+
+        // Iron becomes "attached" at higher field strength
+        setIronAttached(magnetStrength > 60);
       }
+      // No else clause - if strength drops below 40%, we do nothing to the position
     }
-    // REMOVE THIS ENTIRE ELSE IF BLOCK!
-    /* else if (magnetStrength === 0) {
-    // Only reset position when strength is completely turned off
-    setIronPosition(0);
-    setMaxIronPosition(0);
-    setIronAttached(false);
-  } */
-  }, [magnetStrength, ironPosition]);
+
+    // Completely removed the else-if that was resetting position
+  }, [magnetStrength, ironPosition, maxIronPosition]);
 
   // Animation for magnetic field
   useEffect(() => {
@@ -229,14 +255,6 @@ const MagneticPropertiesLab = () => {
     }
 
     setDistanceData(ironData);
-
-    // Switch to show the table tab first
-    // setActiveTab("table");
-
-    // // After 2 seconds, switch to show the graph
-    // setTimeout(() => {
-    //   setActiveTab("graph");
-    // }, 2000);
   };
   const renderTabContent = (tab) => {
     if (!activeTab || activeTab !== tab) return null;
@@ -373,7 +391,7 @@ const MagneticPropertiesLab = () => {
             ))}
           </div>
           {/* Simulation Area */}
-          <div className=" -rotate-90 h-[50%] absolute max-w-xl rounded-lg p-4 bottom-32 left-0 right-0 mx-auto ">
+          <div className="-rotate-90 absolute max-w-xl overflow-visible rounded-lg p-4 bottom-36 left-0 right-0 mx-auto ">
             {/* Container for simulation with aspect ratio */}
             <div className="relative w-full pt-[56.25%]">
               {" "}
@@ -384,7 +402,7 @@ const MagneticPropertiesLab = () => {
                 <div className="absolute rotate-90  left-1/4 top-1/2 transform -translate-y-1/2 -translate-x-1/2">
                   <img
                     src="magnet.png"
-                    className="w-auto h-16 object-cover"
+                    className="w-auto h-16 z-[150] object-cover"
                     alt=""
                   />
                 </div>
@@ -392,7 +410,7 @@ const MagneticPropertiesLab = () => {
                 {/* Bin for non-magnetic materials */}
 
                 {/* Materials area - positioned on the right side */}
-                <div className="absolute text-white font-bold right-[25%] top-0 h-full flex flex-col justify-evenly items-start">
+                <div className="absolute text-white bg-transparent z-10 font-bold right-[25%] top-0 h-full flex flex-col justify-evenly items-start">
                   {/* Aluminum - at the top */}
 
                   <div
@@ -524,7 +542,7 @@ const MagneticPropertiesLab = () => {
                 backgroundSize: "contain",
                 backgroundRepeat: "no-repeat",
               }}
-              className=" bottom-5 w-[15vmin] h-[15vmin] overflow-hidden rounded-md flex items-center justify-center"
+              className="bottom-5 w-[15vmin] h-[15vmin] overflow-hidden rounded-md flex items-center justify-center"
               onDragOver={handleDragOver}
               onDrop={handleDrop}
             >
@@ -653,10 +671,9 @@ const MagneticField = ({ strength }) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    // This controls the size of the canvas itself
+    // Increase the size of the canvas for larger field
     const resizeCanvas = () => {
-      // Increase base size and use a higher multiplier to accommodate larger rings
-      const size = Math.max(280, strength * 2.5);
+      const size = Math.max(500, strength * 5);
       canvas.width = size;
       canvas.height = size;
     };
@@ -665,69 +682,95 @@ const MagneticField = ({ strength }) => {
 
     // Draw magnetic field
     const drawMagneticField = () => {
-      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
-      const fieldStrength = Math.max(10, strength);
+
+      // Use max of 40% for field structure calculations - this freezes the structure at 40%
+      const structureStrength = Math.min(40, strength);
+      // Use actual strength only for opacity/color
+      const visualStrength = Math.max(20, strength);
 
       // Calculate max safe radius to ensure rings stay visible
-      // This ensures we never draw beyond 80% of the distance to canvas edge
-      const maxSafeRadius = Math.min(centerX, centerY) * 0.9;
+      const maxSafeRadius = Math.min(centerX, centerY) * 0.95;
 
       // Scale factor to keep rings within bounds
-      const largestTheoreticalRing = 40 + fieldStrength * (4 * 0.3 + 0.3) + 5;
+      const largestTheoreticalRing =
+        70 + structureStrength * (4 * 0.5 + 0.5) + 10;
       const scaleFactor =
         largestTheoreticalRing > maxSafeRadius
           ? maxSafeRadius / largestTheoreticalRing
           : 1;
 
-      // Draw multiple field rings
-      for (let i = 0; i < 5; i++) {
-        // Calculate radius with pulsing effect
-        let baseRadius = 20 + fieldStrength * (i * 0.2 + 0.2); // Reduced multiplier from 0.3 to 0.2
-        let animationOffset = Math.sin(pulseRef.current - i * 0.5) * 5;
-        let radius = (baseRadius + animationOffset) * scaleFactor; // Apply scale factor
+      // Always draw exactly 7 rings
+      const ringCount = 7;
 
-        // Calculate opacity based on strength and ring number
-        let alpha = Math.max(0.05, (fieldStrength / 100) * (0.5 - i * 0.1));
+      for (let i = 0; i < ringCount; i++) {
+        // Use structureStrength for positioning (freezes at 40%)
+        let baseRadius = 60 + structureStrength * (i * 0.45 + 0.4);
+        let animationOffset = Math.sin(pulseRef.current - i * 0.5) * 8;
+        let radius = (baseRadius + animationOffset) * scaleFactor;
 
-        // Set stroke style
+        // Use visualStrength for appearance changes (continues to increase)
+        // Increase opacity as strength increases beyond 40%
+        let baseAlpha = Math.max(
+          0.15,
+          (structureStrength / 100) * (0.7 - i * 0.07)
+        );
+        let extraOpacity = strength > 40 ? (strength - 40) / 200 : 0; // Subtle increase in opacity
+        let alpha = Math.min(0.9, baseAlpha + extraOpacity);
+
+        // Set stroke style with brightness tied to actual strength
         ctx.strokeStyle = `rgba(30, 64, 255, ${alpha})`;
-        ctx.lineWidth = 2;
+        // Keep line width consistent after 40%
+        ctx.lineWidth = Math.max(1.5, 3 * (Math.min(40, strength) / 50));
 
         // Draw ring
         ctx.beginPath();
         ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
         ctx.stroke();
 
-        // Inner glow for strongest ring
-        if (i === 0 && strength > 50) {
-          ctx.fillStyle = `rgba(30, 90, 255, ${alpha * 0.2})`;
+        // Inner glow with increasing intensity
+        if (i <= 2) {
+          let glowIntensity = 0.35;
+          if (strength > 40) {
+            // Increase glow intensity as strength increases
+            glowIntensity += (strength - 40) / 300;
+          }
+          ctx.fillStyle = `rgba(30, 90, 255, ${alpha * glowIntensity})`;
           ctx.fill();
         }
       }
 
-      // Add particles if strong enough - also apply scale factor
-      if (strength > 30) {
-        const particleCount = Math.floor(strength / 10);
+      // Add particles with consistent count after 40%
+      const particleCount =
+        strength > 40
+          ? Math.floor(40 / 5) // Fixed count after 40%
+          : Math.floor(strength / 5);
 
-        for (let i = 0; i < particleCount; i++) {
-          const angle =
-            pulseRef.current * 0.5 + (i / particleCount) * Math.PI * 2;
-          const distance =
-            (30 + strength * 0.2 + Math.sin(pulseRef.current + i) * 10) *
-            scaleFactor;
-          const x = centerX + Math.cos(angle) * distance;
-          const y = centerY + Math.sin(angle) * distance;
+      for (let i = 0; i < particleCount; i++) {
+        const angle =
+          pulseRef.current * 0.5 + (i / particleCount) * Math.PI * 2;
 
-          // Draw particle
-          ctx.fillStyle = `rgba(100, 150, 255, ${0.3 + Math.random() * 0.3})`;
-          ctx.beginPath();
-          ctx.arc(x, y, 2, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        // Use structureStrength for positioning (freezes at 40%)
+        const distance =
+          (50 + structureStrength * 0.4 + Math.sin(pulseRef.current + i) * 15) *
+          scaleFactor;
+
+        const x = centerX + Math.cos(angle) * distance;
+        const y = centerY + Math.sin(angle) * distance;
+
+        // Use visualStrength for appearance (brightness increases)
+        const particleOpacity = 0.5 + strength / 200;
+        ctx.fillStyle = `rgba(100, 150, 255, ${Math.min(
+          0.95,
+          particleOpacity
+        )})`;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+        ctx.fill();
       }
     };
 
@@ -750,7 +793,7 @@ const MagneticField = ({ strength }) => {
   return (
     <canvas
       ref={canvasRef}
-      className="absolute w-[50%] object-contain h-[100%] left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
+      className="absolute object-cover w-[100%]  h-[150%] left-1/4 top-1/2 transform -translate-x-1/2 -translate-y-1/2"
       style={{
         opacity: strength > 0 ? 1 : 0,
         transition: "opacity 0.3s ease",
