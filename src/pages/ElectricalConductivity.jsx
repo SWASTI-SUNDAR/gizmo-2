@@ -416,6 +416,9 @@ const BulbCircuit = ({ brightness }) => {
                     dur={`${animationSpeed + i * 0.2}s`}
                     repeatCount="indefinite"
                     path="M175 195 C130 220, 150 270, 120 300 C100 330, 120 380, 100 400 L100 420"
+                    keyPoints="1;0"
+                    calcMode="linear"
+                    keyTimes="0;1"
                     rotate="auto"
                   />
                 </circle>
@@ -424,12 +427,14 @@ const BulbCircuit = ({ brightness }) => {
                     dur={`${animationSpeed + i * 0.2}s`}
                     repeatCount="indefinite"
                     path="M225 195 C270 220, 250 270, 280 300 C300 330, 280 380, 300 400 L300 420"
+                    keyPoints="1;0"
+                    calcMode="linear"
+                    keyTimes="0;1"
                     rotate="auto"
                   />
                 </circle>
               </React.Fragment>
             ))}
-
           {/* Circuit Board */}
           <rect
             x="80"

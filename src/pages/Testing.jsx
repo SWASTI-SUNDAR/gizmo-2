@@ -124,7 +124,7 @@ const MagneticPropertiesLab = () => {
 
   const recordTest = (materialId) => {
     const material = materials.find((m) => m.id === materialId);
-     
+
     const newData = {
       id: Date.now(),
       timestamp: new Date().toISOString(),
@@ -342,7 +342,7 @@ const MagneticPropertiesLab = () => {
         return null;
     }
   };
-  
+
   const handleSliderChange = (value) => {
     setMagnetStrength(value);
     if (!sliderUsed) {
@@ -353,7 +353,7 @@ const MagneticPropertiesLab = () => {
     <div
       className="w-full bg-no-repeat bg-center bg-cover h-screen relative overflow-hidden"
       style={{
-        backgroundImage: "url('page-two-bg.png')",
+        backgroundImage: "url('bg-image-m3.png')",
       }}
     >
       <div className="px-4 sm:px-8 md:px-16 lg:px-28 h-full max-w-screen-2xl mx-auto p-6">
@@ -509,17 +509,25 @@ const MagneticPropertiesLab = () => {
               Non-Magnetic Bin
             </span>
           </div>
+          <div className="bg-opacity-80 p-3 rounded-lg max-w-[15rem] absolute bottom-0 right-32"></div>
           {/* Bin for non-magnetic materials */}
-          <div
-            style={{
-              backgroundImage: "url('bin.png')",
-              backgroundSize: "contain",
-              backgroundRepeat: "no-repeat",
-            }}
-            className="absolute right-0 bottom-5 w-[15vmin] h-[15vmin] overflow-hidden rounded-md flex items-center justify-center"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-          >
+          <div className="absolute right-0 bottom-5 flex gap-2 items-center justify-center">
+            <div className="max-w-[15rem] right-0 w-fit mt-3">
+              <span className="font-bold leading-none text-[10px]">
+                Once you finish testing the magnetic field, start by dragging
+                and dropping the non-magnetic items into the bin.
+              </span>
+            </div>
+            <div
+              style={{
+                backgroundImage: "url('bin.png')",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat",
+              }}
+              className=" bottom-5 w-[15vmin] h-[15vmin] overflow-hidden rounded-md flex items-center justify-center"
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
+            >
               {/* Display items in the bin */}
               <div className="">
                 {materialPositions.aluminum.inBin && (
@@ -553,6 +561,7 @@ const MagneticPropertiesLab = () => {
                   </div>
                 )}
               </div>
+            </div>
           </div>
         </div>
       </div>
@@ -587,42 +596,48 @@ const ControlPanel = ({
   sliderUsed,
 }) => {
   return (
-    <div className="space-y-6 absolute  md:bottom-5 bottom-5 flex justify-center items-center w-full">
-      <div className="bg-gray-900 px-16 z-50 text-white p-3 rounded-lg shadow-lg flex justify-center items-center md:gap-16 gap-5">
-        {/* Magnet Strength Slider */}
-        <div className="flex flex-col  gap-2 justify-center items-center">
-          <span className="text-blue-400 text-sm font-semibold">
-            Magnet Strength
-          </span>
-          <div className="flex items-center">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={magnetStrength}
-              onChange={(e) => setMagnetStrength(parseInt(e.target.value))}
-              className="h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-orange-500"
-            />
+    <div className="space-y-6 absolute md:bottom-5 bottom-5 flex justify-center items-center w-full">
+      <div className="flex items-center gap-4">
+        {/* Control Panel */}
+        <div className="bg-gray-900 px-16 z-50 text-white p-3 rounded-lg shadow-lg flex justify-center items-center md:gap-10">
+          {/* Magnet Strength Slider */}
+          <div className="flex flex-col gap-2 justify-center items-center">
+            <span className="text-blue-400 text-sm font-semibold">
+              Magnet Strength
+            </span>
+            <div className="flex items-center">
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={magnetStrength}
+                onChange={(e) => setMagnetStrength(parseInt(e.target.value))}
+                className="h-1 bg-gray-300 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+            </div>
+            <span className="text-sm ml-2 w-12">{magnetStrength}%</span>
           </div>
-          <span className="text-sm ml-2 w-12">{magnetStrength}%</span>
+
+          {/* Reset button */}
+
+          <div className="flex gap-10 items-center justify-center">
+            <button
+              onClick={recordTest}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Record Test
+            </button>
+            <button
+              onClick={resetExperiment}
+              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+            >
+              Reset
+            </button>
+          </div>
         </div>
 
-        {/* Reset button */}
-
-        <div className="flex gap-10 items-center justify-center">
-          <button
-            onClick={recordTest}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-          >
-            Record Test
-          </button>
-          <button
-            onClick={resetExperiment}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Reset
-          </button>
-        </div>
+        {/* Instructions - now positioned next to the control panel */}
+       
       </div>
     </div>
   );
